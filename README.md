@@ -1,11 +1,11 @@
 # pywup
-A small set of tools 
+A small set of tools.
 
 TODO: Expand this using [Github-flavored Markdown](https://guides.github.com/features/mastering-markdown/)
 
 # configure
 
-This is a python library for creating template based configure scripts.
+This is a python library for creating template-based configure scripts.
 
 ```python
 #!/usr/bin/env python3
@@ -63,7 +63,7 @@ This is a command line utility for running experiments, plotting and executing r
 collect runs a program multiple times and collects outputs
 
 ```bash
-./wup collect \
+wup collect \
     --p TRAIN_TIME "Info: Time to train was ([-0-9\.e\+]+) μs" \
     --p TEST_TIME "Info: Time to test was ([-0-9\.e\+]+) μs" \
     --p ACC "Test Acc = ([0-9\.]+)" \
@@ -82,7 +82,7 @@ collect runs a program multiple times and collects outputs
 heatmap receives a csv file and generates a heatmap 
 
 ```bash
-./wup heatmap \
+wup heatmap \
     --data ./wespa.csv \
     --y "THREADS" \
     --x "JOBS" \
