@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="pywup",
-    version="0.0.3",
+    version="0.0.4",
     author="Diego Souza",
     author_email="contact@wespa.com.br",
     description="A small set of tools",
@@ -19,6 +19,6 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     entry_points = {
-        'console_scripts': ['wup1=pywup.cmdline:py_wup', 'wup2=pywup.cmdline:py_wup_2'],
+        'console_scripts': ['wup=pywup.wup:wup'],
     }
 )
