@@ -1,20 +1,14 @@
 #!/usr/bin/env python3
 
 from collections import defaultdict
+from .shared import *
+
 import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib
 import argparse
 import math
-import csv
 import pdb
-
-
-def read_csv(filepath):
-    with open(filepath, "r") as fin:
-        reader = csv.reader(fin, delimiter=';')
-        data = [cells for cells in reader]
-        return np.array(data, dtype=object)
 
 
 def get_arguments(argv):
@@ -55,6 +49,12 @@ def get_arguments(argv):
 
     parser.add_argument('--title', type=str, default=None, metavar='FILEPATH',
                         help='save the output as a file. If not present, the result will be displayed in a gui')
+
+    parser.add_argument('--xlabel', type=str, default=None, metavar='L',
+                        help='label for the x axis')
+
+    parser.add_argument('--ylabel', type=str, default=None, metavar='L',
+                        help='label for the y axis')
 
     return parser.parse_args(argv)
 
@@ -126,7 +126,6 @@ def main(argv):
 
         data[yyy, xxx] = np.mean(values)
 
-
     # Create the heatmap
     if args.size:
         w, h = args.size
@@ -134,7 +133,6 @@ def main(argv):
     else:
         fig, ax = plt.subplots(figsize=(10,7))
 
-    # ax = plt.gca()
     im = ax.imshow(data)
 
     cbar = ax.figure.colorbar(im, ax=ax)
@@ -145,6 +143,12 @@ def main(argv):
 
     ax.set_xticklabels(xlabels)
     ax.set_yticklabels(ylabels)
+
+    if args.ylabel:
+        ax.set_ylabel(args.ylabel)
+    
+    if args.xlabel:
+        ax.set_xlabel(args.xlabel)
 
     # Draw labels for each cell
     if args.tzz:

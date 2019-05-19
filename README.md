@@ -74,7 +74,7 @@ wup collect \
     --c "./wisard -createModel RamWisard -ramBits 28 -decoder classic -ramType prime \
             -train mnist ../data/emnist/byclass/emnist-byclass-train \
             -test mnist ../data/emnist/byclass/emnist-byclass-test \
-            -times -numThreads 4 -hashSize 18041 -jobsPerThread 10000 -bleaching Y -pPredict 2"
+            -times -numThreads {} -hashSize 18041 -jobsPerThread {} -bleaching Y -pPredict 2"
 ```
 
 ## heatmap
@@ -91,7 +91,7 @@ wup heatmap \
     --tx "\"%d\" % int(float(data[i,x]))" \
     --ty "\"%d\" % int(float(data[i,y]))" \
     --tzz "\"%.2f\" % data[i,j]" \
-    --title "Speedup (threads / blockSize) x 10" \
+    --title "Speedup (threads / blockSize)" \
     --size 10 4 \
     --o heatmap_wespa.png
 ```

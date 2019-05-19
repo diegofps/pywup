@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 from subprocess import Popen, PIPE
+from .shared import *
+
 import numpy as np
 import shlex
 import math
@@ -8,43 +10,6 @@ import csv
 import sys
 import pdb
 import re
-
-
-class Args:
-    
-    def __init__(self, args):
-        self.args = args
-        self.current = 0
-    
-    def has_cmd_parameter(self):
-        return self.has_next() and not self.args[self.current].startswith("-")
-    
-    def has_cmd(self):
-        return self.has_next() and self.args[self.current].startswith("-")
-    
-    def has_next(self):
-        return self.current < len(self.args)
-    
-    def sneak(self):
-        return None if self.current == len(self.args) else self.args[self.current]
-    
-    def pop(self):
-        if self.current == len(self.args):
-            raise RuntimeError("No more arguments to pop")
-        
-        v = self.args[self.current]
-        self.current += 1
-        return v
-    
-    def pop_parameter(self):
-        if not self.has_cmd_parameter():
-            raise RuntimeError("Unexpected argument, expecting a command parameter")
-        return self.pop()
-    
-    def pop_cmd(self):
-        if not self.has_cmd():
-            raise RuntimeError("Unexpected argument, expecting a command: ", self.sneak())
-        return self.pop()
 
 
 class Pattern:
@@ -153,18 +118,20 @@ def perm_variables(variables, output=[]):
 
 def do_collect(variables, cmdline, patterns, runs, filepath):
     if not cmdline:
-        return print("Missing parameter cmdline")
+        return print("Missing parameter --c")
 
     if len(patterns) == 0:
-        return print("No patterns were given, nothing would be collected")
+        return print("No pattern (--p) was given, nothing would be collected")
 
     if runs <= 0:
-        return print("Must execute at least 1 run")
+        return print("--run must be >= 1")
 
+    print("FilepathOut:", filepath)
+    print("Runs:", runs)
     print("Variables:")
     for v in variables:
         vs = v.get_values()
-        print("{} ({}) : {}".format(v.get_name(), len(vs), vs))
+        print("    {} ({}) : {}".format(v.get_name(), len(vs), vs))
 
     with open(filepath, "w") as fout:
         writer = csv.writer(fout, delimiter=";", quoting=csv.QUOTE_MINIMAL)
