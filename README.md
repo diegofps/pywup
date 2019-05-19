@@ -60,7 +60,7 @@ This is a command line utility for running experiments, plotting and executing r
 
 ## collect
 
-collect runs a program multiple times and collects outputs
+collect runs a program multiple times and collects outputs.
 
 ```bash
 wup collect \
@@ -79,7 +79,7 @@ wup collect \
 
 ## heatmap
 
-heatmap receives a csv file and generates a heatmap 
+heatmap receives a csv file and generates a heatmap.
 
 ```bash
 wup heatmap \
@@ -94,4 +94,31 @@ wup heatmap \
     --title "Speedup (threads / blockSize)" \
     --size 10 4 \
     --o heatmap_wespa.png
+```
+
+## bars
+
+Generates a bar graphic using one or more csv files.
+
+```bash
+wup bars \
+    --load ./note.csv \
+    --line THREADS TEST_TIME "note test" \
+    --line THREADS TRAIN_TIME "note train" \
+ \
+    --load ./out.csv \
+    --line THREADS TEST_TIME "wespa test" \
+    --line THREADS TRAIN_TIME "wespa train"\
+ \
+    --title "Predict speedups (threads / speedup)" \
+    --ty "y[0,0] / y[i,j]" \
+    --ts "y[0,0]*s[i,j] / (y[i,j]**2)" \
+    --tyy "\"%.2f\" % ty[i,j] if ty[i,j] else ''" \
+    --tx "int(float(x[i]))" \
+    --xlabel "Threads" \
+    --ylabel "Speedup" \
+    --barwidth 0.9 \
+    --size 10 4 \
+    --verbose \
+    --o bars_parallelPredictSpeedup.png
 ```
