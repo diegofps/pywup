@@ -56,6 +56,9 @@ def get_arguments(argv):
     parser.add_argument('--ylabel', type=str, default=None, metavar='L',
                         help='label for the y axis')
 
+    parser.add_argument('--verbose', type=bool, default=False,
+                        help='print debug info')
+
     return parser.parse_args(argv)
 
 
@@ -64,7 +67,7 @@ def map_labels(column):
     tmp = {}
 
     for i in range(column.shape[0]):
-        l = column[i].item()
+        l = column[i]
         if not l in tmp:
             tmp[l] = len(tmp)
             labels.append(l)
@@ -80,10 +83,20 @@ def main(argv):
     headers = src[0,:]
     data = src[1:,:]
 
+    if args.verbose:
+        print("HEADERS")
+        print(headers)
+        
+        print("DATA")
+        print(data)
+
     # Locate headers
-    x = np.where(headers == args.x)
-    y = np.where(headers == args.y)
-    z = np.where(headers == args.z)
+    x = find_column(headers, args.x)
+    y = find_column(headers, args.y)
+    z = find_column(headers, args.z)
+
+    if args.verbose:
+        print("COLUMNS: x={}, y={}, z={}".format(x, y, z))
 
     # Convert the z column to float
     for i in range(data.shape[0]):
@@ -92,6 +105,10 @@ def main(argv):
     # Select columns of interest
     data2 = data[:,[x, y, z]]
 
+    if args.verbose:
+        print("SELECTED COLUMNS (x, y, z)")
+        print(data2)
+    
     # Apply transformations
     if args.tx:
         for i in range(data.shape[0]):
@@ -109,7 +126,7 @@ def main(argv):
     # Aggregate the results
     s = defaultdict(list)
     for i in range(data2.shape[0]):
-        s[(data2[i, 0].item(), data2[i, 1].item())].append(data2[i,2])
+        s[(data2[i, 0], data2[i, 1])].append(data2[i,2])
 
     xmap, xlabels = map_labels(data2[:,0])
     ymap, ylabels = map_labels(data2[:,1])
