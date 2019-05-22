@@ -26,6 +26,8 @@ class Pattern:
         return self.name
     
     def get_value(self):
+        if self.value == -1:
+            sys.stdout.write("!(" + self.name + ")")
         return self.value
     
     def check(self, row):
