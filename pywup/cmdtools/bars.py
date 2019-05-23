@@ -10,6 +10,7 @@ import numpy as np
 import colorcet
 import math
 import pdb
+import sys
 
 
 class Line:
@@ -44,6 +45,10 @@ class Line:
                 key = data[i, x]
                 value = data[i, y]
                 values[key].append(float(value))
+        
+        if len(values) == 0:
+            print("Aborting: Filter for", self.name, "returned no item")
+            sys.exit(0)
         
         self.means = {k:np.mean(values[k]) for k in values}
         self.stds = {k:np.std(values[k]) for k in values}
@@ -245,7 +250,6 @@ def main(argv):
     b.nostd = False
     b.labelsize = 8
     b.size = (10,7)
-    b.filter = None
     b.title = None
     b.tyy = None
     b.tx = None
@@ -305,8 +309,5 @@ def main(argv):
 
         elif cmd == "--labelsize":
             b.labelsize = int(args.pop_parameter())
-
-        elif cmd == "--filter":
-            b.filter = int(args.pop_parameter())
 
     do_bars(b)
