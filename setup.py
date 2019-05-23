@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="pywup",
-    version="0.0.8",
+    version="0.0.9",
     author="Diego Souza",
     author_email="contact@wespa.com.br",
     description="A small set of tools",
@@ -20,5 +20,8 @@ setuptools.setup(
     ],
     entry_points = {
         'console_scripts': ['wup=pywup.wup:wup'],
-    }
+    },
+    install_requires=[
+        'colorcet',
+    ]
 )

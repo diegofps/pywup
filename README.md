@@ -1,9 +1,23 @@
 # pywup
 A small set of tools.
 
-TODO: Expand this using [Github-flavored Markdown](https://guides.github.com/features/mastering-markdown/)
+TODO: Expand this [markdown](https://guides.github.com/features/mastering-markdown/)
 
-# configure
+# How to install / update
+
+```bash
+pip3 install --upgrade pywup --user --no-cache-dir
+```
+
+If you cannot run the wup command after installation, check if the path to the folder .local/bin is in your PATH. If not, add the following to the end of your ~/.bashrc:
+
+```
+export PATH=/home/<YOUR_USERNAME>/.local/bin:$PATH
+```
+
+# The library 
+
+## configure
 
 This is a python library for creating template-based configure scripts.
 
