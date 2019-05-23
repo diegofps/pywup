@@ -19,7 +19,7 @@ class Args:
         self.args = args
         self.current = 0
     
-    def has_cmd_parameter(self):
+    def has_parameter(self):
         return self.has_next() and not self.args[self.current].startswith("-")
     
     def has_cmd(self):
@@ -40,7 +40,7 @@ class Args:
         return v
     
     def pop_parameter(self):
-        if not self.has_cmd_parameter():
+        if not self.has_parameter():
             raise RuntimeError("Unexpected argument, expecting a command parameter")
         return self.pop()
     

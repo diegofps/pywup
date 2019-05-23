@@ -8,6 +8,7 @@ import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import numpy as np
 import colorcet
+import math
 import pdb
 
 
@@ -17,21 +18,32 @@ class Line:
         if src is None:
             raise RuntimeError("You must call --data before calling --line")
         
-        src_headers = src[0,:]
-        src_data = src[1:,:]
+        headers = src[0,:]
+        data = src[1:,:]
         
-        self.xheader = args.pop_parameter()
-        self.yheader = args.pop_parameter()
+        xheader = args.pop_parameter()
+        yheader = args.pop_parameter()
         self.name = args.pop_parameter()
         
-        self.xcol = find_column(src_headers, self.xheader)
-        self.ycol = find_column(src_headers, self.yheader)
+        myfilter = args.pop_parameter() if args.has_parameter() else None
+        
+        x = find_column(headers, xheader)
+        y = find_column(headers, yheader)
         
         values = defaultdict(list)
-        for i in range(src_data.shape[0]):
-            key = src_data[i,self.xcol]
-            value = src_data[i,self.ycol]
-            values[key].append(float(value))
+        
+        if myfilter:
+            for i in range(data.shape[0]):
+                if eval(myfilter):
+                    key = data[i, x]
+                    value = data[i, y]
+                    values[key].append(float(value))
+
+        else:
+            for i in range(data.shape[0]):
+                key = data[i, x]
+                value = data[i, y]
+                values[key].append(float(value))
         
         self.means = {k:np.mean(values[k]) for k in values}
         self.stds = {k:np.std(values[k]) for k in values}
@@ -39,7 +51,7 @@ class Line:
     
     def get_value(self, key):
         return self.means[key] if key in self.means else 0.0
-            
+
     def get_std(self, key):
         return self.stds[key] if key in self.stds else 0.0
     
@@ -48,7 +60,7 @@ class Line:
 
 
 def enhance_color(c):
-    #return c
+    return c
     f = lambda x : x * 0.8 + 0.2
     r, g, b = mcolors.to_rgb(c)
     return [f(r), f(g), f(b)]
@@ -233,6 +245,7 @@ def main(argv):
     b.nostd = False
     b.labelsize = 8
     b.size = (10,7)
+    b.filter = None
     b.title = None
     b.tyy = None
     b.tx = None
@@ -292,5 +305,8 @@ def main(argv):
 
         elif cmd == "--labelsize":
             b.labelsize = int(args.pop_parameter())
+
+        elif cmd == "--filter":
+            b.filter = int(args.pop_parameter())
 
     do_bars(b)
