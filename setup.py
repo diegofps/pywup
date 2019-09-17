@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="pywup",
-    version="0.0.9",
+    version="0.0.13",
     author="Diego Souza",
     author_email="contact@wespa.com.br",
     description="A small set of tools",
