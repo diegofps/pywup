@@ -51,6 +51,13 @@ def sync_file(fin, fout):
     os.system(cmd)
 
 def parse_file(filepath, create):
+    
+    filepath = os.path.expanduser(filepath)
+    filepath = os.path.abspath(filepath)
+    root     = os.path.dirname(filepath)
+    
+    os.chdir(root)
+    
     with open(filepath, "r") as fin:
         reader = csv.reader(fin, delimiter=';')
         
