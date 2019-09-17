@@ -136,3 +136,23 @@ wup bars \
     --verbose \
     --o bars_parallelPredictSpeedup.png
 ```
+
+## backup
+
+Example ***~/.wupbackup*** fil:e
+
+```
+file;~/.local/bin/macro_play;./local_bin/
+file;~/.local/bin/macro_rec_start;./local_bin/
+file;~/.local/bin/macro_rec_stop;./local_bin/
+folder;~/.config/compton;./compton
+file;~/.vimrc;./vimrc
+folder;~/.config/i3;./i3
+file;~/.wupbackup;~/Dropbox/backup/wupbackup
+```
+
+Do backup
+
+```bash
+wup backup
+```

@@ -22,9 +22,7 @@ def sync_folder(fin, fout):
     elif fin.endswith("/"):
         fin = fin + os.path.basename(fout)
     
-    fin = fin + "/"
-
-    cmd = "rsync -r %s %s" % (fin, fout)
+    cmd = "rsync -rtu %s/* %s/ ; rsync -rtu %s/* %s/" % (fin, fout, fout, fin)
     #print("FOLDER:", cmd)
     os.system(cmd)
 
@@ -46,11 +44,11 @@ def sync_file(fin, fout):
     os.makedirs(os.path.dirname(fout), exist_ok=True)
     os.makedirs(os.path.dirname(fin), exist_ok=True)
     
-    cmd = "cp %s %s" % (fin, fout)
+    cmd = "rsync -ut %s %s ; rsync -ut %s %s" % (fin, fout, fout, fin)
     #print("FILE:", cmd)
     os.system(cmd)
 
-def parse_file(filepath, create):
+def parse_file(filepath):
     
     filepath = os.path.expanduser(filepath)
     filepath = os.path.abspath(filepath)
@@ -64,34 +62,17 @@ def parse_file(filepath, create):
         for line, cells in enumerate(reader):
             
             if len(cells) != 3:
-                print("error: Wrong number of cells in line. Expected 3, got", line)
+                print("error: Wrong number of cells in line. Expected 3, got", len(line))
             
             elif cells[0] == "folder":
-                if create:
-                    sync_folder(cells[1], cells[2])
-                else:
-                    sync_folder(cells[2], cells[1])
+                sync_folder(cells[1], cells[2])
             
             elif cells[0] == "file":
-                if create:
-                    sync_file(cells[1], cells[2])
-                else:
-                    sync_file(cells[2], cells[1])
+                sync_file(cells[1], cells[2])
             
             else:
                 print("error: Inline rule in line. Options are [file, folder], got", cells[0])
 
 def main(argv):
-    
-    filepath = "./BackupConfig"
-    create = True
-    
-    for t in argv:
-        if t == "create":
-            create = True
-        elif t == "restore":
-            create = False
-        else:
-            filepath = t
-    
-    parse_file(filepath, create)
+    filepath = "~/.wupbackup" if len(argv) == 0 else argv[0]
+    parse_file(filepath)
