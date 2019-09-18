@@ -142,16 +142,16 @@ wup bars \
 Example ***~/.wupbackup*** fil:e
 
 ```
-file;~/.local/bin/macro_play;./local_bin/
-file;~/.local/bin/macro_rec_start;./local_bin/
-file;~/.local/bin/macro_rec_stop;./local_bin/
-folder;~/.config/compton;./compton
-file;~/.vimrc;./vimrc
-folder;~/.config/i3;./i3
+file;~/.local/bin/macro_play;~/Dropbox/backup/local_bin/
+file;~/.local/bin/macro_rec_start;~/Dropbox/backup/local_bin/
+file;~/.local/bin/macro_rec_stop;~/Dropbox/backup/local_bin/
+folder;~/.config/compton;~/Dropbox/backup/compton
+file;~/.vimrc;~/Dropbox/backup/vimrc
+folder;~/.config/i3;~/Dropbox/backup/i3
 file;~/.wupbackup;~/Dropbox/backup/wupbackup
 ```
 
-Do backup
+Invoke backup / restore
 
 ```bash
 wup backup
