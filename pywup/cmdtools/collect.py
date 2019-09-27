@@ -42,7 +42,7 @@ class ListVariable:
         self.name = args.pop_parameter()
         self.values = []
         
-        while args.has_cmd_parameter():
+        while args.has_cmd():
             self.values.append(args.pop_parameter())
     
     def get_name(self):
@@ -59,7 +59,7 @@ class ArithmeticVariable:
         
         first = float(args.pop_parameter())
         last  = float(args.pop_parameter())
-        step  = float(args.pop_parameter()) if args.has_cmd_parameter() else 1
+        step  = float(args.pop_parameter()) if not args.has_cmd() else 1
         self.values = np.arange(first, last, step)
     
     def get_name(self):
@@ -76,7 +76,7 @@ class GeometricVariable:
         
         first = float(args.pop_parameter())
         last  = float(args.pop_parameter())
-        step  = float(args.pop_parameter()) if args.has_cmd_parameter() else 2.0
+        step  = float(args.pop_parameter()) if args.has_cmd() else 2.0
         
         if step == 1:
             raise RuntimeError("step cannot be equal to 1")
@@ -176,6 +176,7 @@ def main(argv):
 
     while args.has_next():
         cmd = args.pop_cmd()
+        #print("parsing ", cmd)
 
         if cmd == "--p":
             patterns.append(Pattern(args))
