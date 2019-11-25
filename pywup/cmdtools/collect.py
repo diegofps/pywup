@@ -1,15 +1,28 @@
 #!/usr/bin/env python3
 
 from subprocess import Popen, PIPE
+from multiprocessing import Pool
 from .shared import *
 
 import numpy as np
 import shlex
+import tqdm
 import math
+import copy
 import csv
 import sys
 import pdb
 import re
+
+logger = None
+
+class NewLine:
+    
+    def __init__(self, args):
+        self.p = re.compile(args.pop_parameter())
+    
+    def check(self, row):
+        return self.p.search(row)
 
 
 class Pattern:
@@ -17,23 +30,26 @@ class Pattern:
     def __init__(self, args):
         self.name = args.pop_parameter()
         self.p = re.compile(args.pop_parameter())
-        self.value = -1
+        self.data = None
     
     def clear(self):
-        self.value = -1
+        self.data = None
     
     def get_name(self):
         return self.name
     
     def get_value(self):
-        if self.value == -1:
+        if self.data is None:
             sys.stdout.write("!(" + self.name + ")")
-        return self.value
+        return self.data
+    
+    def value(self):
+        return -1 if self.data is None else float(self.data)
     
     def check(self, row):
         m = self.p.search(row)
         if m:
-            self.value = float(m.groups()[0])
+            self.data = m.groups()[0]
 
 
 class ListVariable:
@@ -44,6 +60,19 @@ class ListVariable:
         
         while args.has_cmd():
             self.values.append(args.pop_parameter())
+    
+    def get_name(self):
+        return self.name
+    
+    def get_values(self):
+        return self.values
+
+
+class RunVariable:
+    
+    def __init__(self, num):
+        self.name = "RUN"
+        self.values = [i for i in range(num)]
     
     def get_name(self):
         return self.name
@@ -99,86 +128,220 @@ def invoke(cmdline):
     args = shlex.split(cmdline)
     p = Popen(args, stdout=PIPE)
     
-    if p.wait() != 0:
-        raise RuntimeError("Command is not working")
+    # Removing this cause it locks if the buffer gets filled by the lower process
+    #if p.wait() != 0:
+    #    raise RuntimeError("Command is not working")
     
-    stdout, _ = p.communicate()
-    return stdout.decode("utf-8").split("\n")
+    rows = "".join([l.decode("utf-8") for l in p.stdout])
+    
+    #stdout, _ = p.communicate()
+    #rows = stdout.decode("utf-8")
+    
+    logger.debug(rows)
+    
+    return rows.split("\n")
 
 
-def perm_variables(variables, output=[]):
+def perm_variables(variables, output=[], named_output=[]):
     if len(variables) == len(output):
-        yield output
+        yield output, named_output
     
     else:
+        name = variables[len(output)].get_name()
+        
         for v in variables[len(output)].get_values():
             output.append(v)
+            named_output.append((name, v))
             for tmp in perm_variables(variables, output):
                 yield tmp
             output.pop()
+            named_output.pop()
 
 
-def do_collect(variables, cmdline, patterns, runs, filepath):
-    if not cmdline:
-        return print("Missing parameter --c")
+class BasicLog:
 
+    ERROR = '\033[91m'
+    WARNING = '\033[93m'
+    INFO = '\033[94m'
+    DEBUG = '\033[92m'
+    NORMAL = '\033[0m'
+
+    def __init__(self, filepath=None, level=2, color=True):
+        self.fout = open(filepath, "w") if filepath else None
+        self.level = level
+        self.color = color
+    
+    def error(self, *args):
+        self.dump(4, BasicLog.ERROR, args)
+    
+    def warn(self, *args):
+        self.dump(3, BasicLog.WARN, args)
+    
+    def print(self, *args):
+        self.dump(2, BasicLog.NORMAL, args)
+    
+    def info(self, *args):
+        self.dump(1, BasicLog.INFO, args)
+    
+    def debug(self, *args):
+        self.dump(0, BasicLog.DEBUG, args)
+    
+    def write(self, *args):
+        sys.stdout.write(*args)
+        if self.fout:
+            if args:
+                self.fout.write(" ".join([str(i) for i in args]))
+    
+    def dump(self, lvl, color, args):
+        if lvl >= self.level:
+            if self.color:
+                print(color, *args, BasicLog.NORMAL)
+            else:
+                print(*args)
+        
+        if self.fout:
+            if args:
+                self.fout.write(" ".join([str(i) for i in args]))
+            self.fout.write("\n")
+            self.fout.flush()
+    
+    def page(self, msg):
+        return "\n ------------------------ " + msg + " ------------------------ \n"
+    
+    def error_pagebreak(self, msg):
+        self.error(self.page(msg))
+    
+    def warn_pagebreak(self, msg):
+        self.warn(self.page(msg))
+
+    def print_pagebreak(self, msg):
+        self.print(self.page(msg))
+
+    def info_pagebreak(self, msg):
+        self.info(self.page(msg))
+
+    def debug_pagebreak(self, msg):
+        self.debug(self.page(msg))
+
+
+def f(data):
+    idd, sequence, named, prepared_cmd = data
+    rows = invoke(prepared_cmd)
+    return rows
+
+
+def do_collect(line_breaks, variables, cmdlines, patterns, runs, filepath, logfilepath, jobs):
+    
+    global logger
+    logger = BasicLog(logfilepath)
+    
+    if not cmdlines:
+        return logger.print("Missing parameter --c")
+    
     if len(patterns) == 0:
-        return print("No pattern (--p) was given, nothing would be collected")
-
+        return logger.print("Missing pattern --p, nothing would be collected")
+    
     if runs <= 0:
-        return print("--run must be >= 1")
-
-    print("FilepathOut:", filepath)
-    print("Runs:", runs)
-    print("Variables:")
+        return logger.print("--runs must be >= 1")
+    
+    variables.append(RunVariable(runs))
+    
+    logger.print_pagebreak("COLLECT PARAMETERS")
+    
+    logger.print("FilepathOut:", filepath)
+    logger.print("Runs:", runs)
+    logger.print("Variables:")
+    
     for v in variables:
         vs = v.get_values()
-        print("    {} ({}) : {}".format(v.get_name(), len(vs), vs))
-
+        logger.print("    {} ({}) : {}".format(v.get_name(), len(vs), vs))
+    
+    logger.print_pagebreak("PREPARING TASKS")
+    
+    tasks = []
+    idd = -1
+    
+    for sequence, named in perm_variables(variables):
+        idd += 1
+        for cmdline in cmdlines:
+            prepared_cmd = cmdline.format(*sequence)
+            tasks.append([idd, copy.copy(sequence), copy.copy(named), prepared_cmd])
+    
+    logger.print_pagebreak("RUNNING TASKS")
+    
+    with Pool(jobs) as p:
+        outputs = list(tqdm.tqdm(p.imap(f, tasks), total=len(tasks)))
+    
+    print(outputs)
+    pdb.set_trace()
+    
+    logger.print_pagebreak("WRITING OUTPUT")
+    
+    last_idd = tasks[0][0] if tasks else None
+    
     with open(filepath, "w") as fout:
         writer = csv.writer(fout, delimiter=";", quoting=csv.QUOTE_MINIMAL)
-        writer.writerow([v.get_name() for v in variables] + ["RUN"] + [p.get_name() for p in patterns])
-        
-        for sequence in perm_variables(variables):
-            sys.stdout.write(str(sequence))
-            sys.stdout.flush()
+        writer.writerow([v.get_name() for v in variables] + [p.get_name() for p in patterns])
             
-            prepared_cmd = cmdline.format(*sequence)
+        for i, data in enumerate(tasks):
+            idd, sequence, _, _ = data
+            rows = outputs[i]
             
-            for run in range(runs):
+            if last_idd != idd:
+                last_idd = idd
+                
+                writer.writerow(sequence + [p.get_value() for p in patterns])
+                fout.flush()
                 
                 for p in patterns:
                     p.clear()
-                
-                rows = invoke(prepared_cmd)
-                
-                for row in rows:
-                    for p in patterns:
-                        p.check(row)
-                
-                writer.writerow(sequence + [run] + [p.get_value() for p in patterns])
-                fout.flush()
-                
-                sys.stdout.write("*")
-                sys.stdout.flush()
             
-            print()
-
+            for row in rows:
+                doBreak = False
+                
+                for n in line_breaks:
+                    if n.check(row):
+                        doBreak = True
+                
+                if doBreak:
+                    writer.writerow(sequence + [p.get_value() for p in patterns])
+                    fout.flush()
+                    
+                    for p in patterns:
+                        p.clear()
+                
+                for p in patterns:
+                    p.check(row)
+        
+        writer.writerow(sequence + [p.get_value() for p in patterns])
+        fout.flush()
+        
+        for p in patterns:
+            p.clear()
+        
 
 def main(argv):
-
+    
     args = Args(argv)
     filepath = "./collect_output.csv"
+    line_breaks = []
     variables = []
-    cmdline = None
     patterns = []
+    cmdline = []
     runs = 1
-
+    jobs = 1
+    
     while args.has_next():
         cmd = args.pop_cmd()
         #print("parsing ", cmd)
 
-        if cmd == "--p":
+        if cmd == "--n":
+            line_breaks.append(NewLine(args))
+
+        elif cmd == "--log":
+            logfilepath = args.pop_parameter()
+        
+        elif cmd == "--p":
             patterns.append(Pattern(args))
 
         elif cmd == "--runs":
@@ -194,9 +357,15 @@ def main(argv):
             variables.append(ListVariable(args))
 
         elif cmd == "--c":
-            cmdline = args.pop_parameter()
+            cmdline.append(args.pop_parameter())
 
         elif cmd == "--o":
             filepath = args.pop_parameter()
-
-    do_collect(variables, cmdline, patterns, runs, filepath)
+        
+        elif cmd == "--jobs":
+            jobs = int(args.pop_parameter())
+        
+        else:
+            print("Unknown command: ", cmd)
+        
+    do_collect(line_breaks, variables, cmdline, patterns, runs, filepath, logfilepath, jobs)

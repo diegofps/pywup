@@ -76,6 +76,14 @@ This is a command line utility for running experiments, plotting and executing r
 
 collect runs a program multiple times and collects outputs.
 
+Example 1 - Permutate variables and collect outputs
+
+* This will permutate the variables THREADS (arithmetic: 1, 3, 5, 7, ...) and JOBS (geometric: 1, 1.6, ...)
+* For each configuration, the program will run 10 times
+* For each execution, the following attributes will be collected: TRAIN_TIME, TEST_TIME and ACC
+* The output will be saved in CSV format at wespa.csv
+* The permutations values for each variable are passed to the program in the same order they are declared. Each "{}" is replaced by the variable value.
+
 ```bash
 wup collect \
     --p TRAIN_TIME "Info: Time to train was ([-0-9\.e\+]+) μs" \
@@ -89,6 +97,47 @@ wup collect \
             -train mnist ../data/emnist/byclass/emnist-byclass-train \
             -test mnist ../data/emnist/byclass/emnist-byclass-test \
             -times -numThreads {} -hashSize 18041 -jobsPerThread {} -bleaching Y -pPredict 2"
+```
+
+Example 2 - Collect multiple rows for the same file
+
+* The parameter --n defines a line break, allowing us to collect multiple rows for the same execution
+* The parameter --log defines an output file to write extra details during the process
+
+```bash
+/home/diego/Sources/pywup/pywup/wup.py collect \
+    --n "[a-zA-Z0-9]+ : AvgIntersectionScore = [-0-9\.e\+]+  AvgCenterDistanceScore = [-0-9\.e\+]+" \
+    --p DS_NAME "([a-zA-Z0-9]+) : AvgIntersectionScore = [-0-9\.e\+]+  AvgCenterDistanceScore = [-0-9\.e\+]+" \
+    --p INTERSECTION "[a-zA-Z0-9]+ : AvgIntersectionScore = ([-0-9\.e\+]+)  AvgCenterDistanceScore = [-0-9\.e\+]+" \
+    --p CENTER_DISTANCE "[a-zA-Z0-9]+ : AvgIntersectionScore = [-0-9\.e\+]+  AvgCenterDistanceScore = ([-0-9\.e\+]+)" \
+    --runs 10 \
+    --o "./collect.csv" \
+    --log "./collect.log" \
+    --c "./run_all.sh"
+```
+
+Example 3 - Multiple commands and parallelization
+
+* Specify multiple --c to call multiple commands
+* The program will parse all their outputs as if they were continuous, one after the other
+* You probably want to use --n to define line breaks and differentiate each command.
+* --jobs defines the number of parallel jobs
+* Right now, only commands within the same configuration are parallelized.
+
+```bash
+/home/diego/Sources/pywup/pywup/wup.py collect \
+    --n "[a-zA-Z0-9]+ : AvgIntersectionScore = [-0-9\.e\+]+  AvgCenterDistanceScore = [-0-9\.e\+]+" \
+    --p DS_NAME "([a-zA-Z0-9]+) : AvgIntersectionScore = [-0-9\.e\+]+  AvgCenterDistanceScore = [-0-9\.e\+]+" \
+    --p INTERSECTION "[a-zA-Z0-9]+ : AvgIntersectionScore = ([-0-9\.e\+]+)  AvgCenterDistanceScore = [-0-9\.e\+]+" \
+    --p CENTER_DISTANCE "[a-zA-Z0-9]+ : AvgIntersectionScore = [-0-9\.e\+]+  AvgCenterDistanceScore = ([-0-9\.e\+]+)" \
+    --jobs 4 \
+    --runs 10 \
+    --o "./collect.csv" \
+    --log "./collect.log" \
+    --c "./run.sh 'Basketball'" \
+    --c "./run.sh 'Biker'" \
+    --c "./run.sh 'Bird1'" \
+    --c "./run.sh 'Bird2'"
 ```
 
 ## heatmap

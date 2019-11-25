@@ -4,7 +4,7 @@ import csv
 
 def find_column(headers, header):
     return np.where(headers == header)[0].item()
-	
+
 
 def read_csv(filepath):
     with open(filepath, "r") as fin:
