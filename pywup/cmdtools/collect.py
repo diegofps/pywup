@@ -19,7 +19,8 @@ logger = None
 class NewLine:
     
     def __init__(self, args):
-        self.p = re.compile(args.pop_parameter())
+        self.raw = args.pop_parameter()
+        self.p = re.compile(self.raw)
     
     def check(self, row):
         return self.p.search(row)
@@ -29,7 +30,8 @@ class Pattern:
     
     def __init__(self, args):
         self.name = args.pop_parameter()
-        self.p = re.compile(args.pop_parameter())
+        self.raw = args.pop_parameter()
+        self.p = re.compile(self.raw)
         self.data = None
     
     def clear(self):
@@ -225,15 +227,19 @@ class BasicLog:
 
 
 def f(data):
-    idd, sequence, named, prepared_cmd = data
+    k, idd, sequence, named, prepared_cmd = data
     rows = invoke(prepared_cmd)
-    return rows
+    return k, rows
 
 
 def do_collect(line_breaks, variables, cmdlines, patterns, runs, filepath, logfilepath, jobs):
     
+    ########################### CREATE THE LOGGER ###########################
+    
     global logger
     logger = BasicLog(logfilepath)
+    
+    ########################### CHECK PARAMETERS ###########################
     
     if not cmdlines:
         return logger.print("Missing parameter --c")
@@ -246,79 +252,109 @@ def do_collect(line_breaks, variables, cmdlines, patterns, runs, filepath, logfi
     
     variables.append(RunVariable(runs))
     
+    ########################### DISPLAY SUMMARY ###########################
+    
     logger.print_pagebreak("COLLECT PARAMETERS")
     
-    logger.print("FilepathOut:", filepath)
+    logger.print("Filepath:", filepath)
+    logger.print("Logfilepath:", logfilepath)
     logger.print("Runs:", runs)
-    logger.print("Variables:")
+    logger.print("Jobs:", jobs)
     
+    logger.print("Input Variables ({})".format(len(variables)))
     for v in variables:
         vs = v.get_values()
         logger.print("    {} ({}) : {}".format(v.get_name(), len(vs), vs))
     
-    logger.print_pagebreak("PREPARING TASKS")
+    logger.print("Output Patterns ({})".format(len(patterns)))
+    for v in patterns:
+        logger.print("    {} : {}".format(v.name, v.raw))
+    
+    logger.print("LineBreaks ({})".format(len(line_breaks)))
+    for v in line_breaks:
+        logger.print("    {}".format(v.raw))
+    
+    logger.print("Commands ({})".format(len(cmdlines)))
+    for v in cmdlines:
+        logger.print("    {}".format(v))
+    
+    ########################### PARALLEL TASKS ###########################
+    
+    logger.print_pagebreak("RUNNING TASKS")
     
     tasks = []
     idd = -1
+    k = 0
     
     for sequence, named in perm_variables(variables):
         idd += 1
         for cmdline in cmdlines:
             prepared_cmd = cmdline.format(*sequence)
-            tasks.append([idd, copy.copy(sequence), copy.copy(named), prepared_cmd])
-    
-    logger.print_pagebreak("RUNNING TASKS")
+            tasks.append([k, idd, copy.copy(sequence), copy.copy(named), prepared_cmd])
+            k += 1
     
     with Pool(jobs) as p:
-        outputs = list(tqdm.tqdm(p.imap(f, tasks), total=len(tasks)))
-    
-    print(outputs)
-    pdb.set_trace()
-    
-    logger.print_pagebreak("WRITING OUTPUT")
-    
-    last_idd = tasks[0][0] if tasks else None
-    
-    with open(filepath, "w") as fout:
-        writer = csv.writer(fout, delimiter=";", quoting=csv.QUOTE_MINIMAL)
-        writer.writerow([v.get_name() for v in variables] + [p.get_name() for p in patterns])
+        with open(filepath, "w") as fout:
+            header = [v.get_name() for v in variables] + [p.get_name() for p in patterns]
+            writer = csv.writer(fout, delimiter=";", quoting=csv.QUOTE_MINIMAL)
+            writer.writerow(header)
             
-        for i, data in enumerate(tasks):
-            idd, sequence, _, _ = data
-            rows = outputs[i]
+            # Line breaks are defined by the patterns we got
+            if line_breaks:
+                ignore_once = True
+                
+                for k, rows in tqdm.tqdm(p.imap(f, tasks), total=len(tasks)):
+                    _, idd, sequence, named, prepared_cmd = tasks[k]
+                    
+                    for row in rows:
+                        doBreak = False
+                        
+                        for n in line_breaks:
+                            if n.check(row):
+                                doBreak = True
+                        
+                        if doBreak:
+                            if ignore_once:
+                                ignore_once = False
+                            else:
+                                writer.writerow(tasks[k-1][2] + [p.get_value() for p in patterns])
+                                fout.flush()
+                            
+                            for p in patterns:
+                                p.clear()
+                        
+                        for p in patterns:
+                            p.check(row)
+                
+                if ignore_once:
+                    ignore_once = False
+                else:
+                    writer.writerow(sequence + [p.get_value() for p in patterns])
+                    fout.flush()
             
-            if last_idd != idd:
-                last_idd = idd
+            # Line breaks are defined by permutations, each combination creates a single line
+            else:
+                last_idd = tasks[0][1] if tasks else None
+                
+                for k, rows in tqdm.tqdm(p.imap(f, tasks), total=len(tasks)):
+                    _, idd, sequence, named, prepared_cmd = tasks[k]
+                    
+                    if last_idd != idd:
+                        last_idd = idd
+                        
+                        writer.writerow(tasks[k-1][2] + [p.get_value() for p in patterns])
+                        fout.flush()
+                        
+                        for p in patterns:
+                            p.clear()
+                    
+                    for row in rows:
+                        for p in patterns:
+                            p.check(row)
                 
                 writer.writerow(sequence + [p.get_value() for p in patterns])
                 fout.flush()
-                
-                for p in patterns:
-                    p.clear()
-            
-            for row in rows:
-                doBreak = False
-                
-                for n in line_breaks:
-                    if n.check(row):
-                        doBreak = True
-                
-                if doBreak:
-                    writer.writerow(sequence + [p.get_value() for p in patterns])
-                    fout.flush()
-                    
-                    for p in patterns:
-                        p.clear()
-                
-                for p in patterns:
-                    p.check(row)
-        
-        writer.writerow(sequence + [p.get_value() for p in patterns])
-        fout.flush()
-        
-        for p in patterns:
-            p.clear()
-        
+
 
 def main(argv):
     
