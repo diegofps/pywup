@@ -287,7 +287,7 @@ def do_collect(line_breaks, variables, cmdlines, patterns, runs, filepath, logfi
     
     ########################### PARALLEL TASKS ###########################
     
-    logger.print(\n"Creating Tasks...")
+    logger.print("\nCreating Tasks...")
     
     tasks = []
     idd = -1
