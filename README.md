@@ -99,10 +99,10 @@ wup collect \
             -times -numThreads {} -hashSize 18041 -jobsPerThread {} -bleaching Y -pPredict 2"
 ```
 
-Example 2 - Collect multiple rows for the same file
+Example 2 - Collect multiple rows from the same command execution
 
-* The parameter --n defines a line break, allowing us to collect multiple rows for the same execution
-* The parameter --log defines an output file to write extra details during the process
+* The parameter --n defines a line break, allowing us to collect multiple rows for the same execution.
+* The parameter --log defines an output file to write extra details during the process.
 
 ```bash
 /home/diego/Sources/pywup/pywup/wup.py collect \
@@ -118,11 +118,14 @@ Example 2 - Collect multiple rows for the same file
 
 Example 3 - Multiple commands and parallelization
 
-* Specify multiple --c to call multiple commands
-* The program will parse all their outputs as if they were continuous, one after the other
-* You probably want to use --n to define line breaks and differentiate each command.
-* --jobs defines the number of parallel jobs
-* Right now, only commands within the same configuration are parallelized.
+* Specify multiple --c to call multiple commands. When multiple commands are presented they will receive the same variables.
+* Their output will also be concatenated, you probably want to use --n to separate them in distinct lines.
+* The program will parse all their outputs as if they were continuous, one after the other.
+* Use --jobs to define the number of parallel processes.
+* Parallelization is be applied across parameter permutation and commands. If you have 16 permutations and 2 commands we have 32 parallel tasks.
+* You may also use --jobs without multiple commands.
+* You may also use --c with just one --jobs.
+* Use parallelism to tune parameters and single process to measure times. When you are measuring execution time, multiple processes may slightly slow each other as they compete for resources.
 
 ```bash
 /home/diego/Sources/pywup/pywup/wup.py collect \
