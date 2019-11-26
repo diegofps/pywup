@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
+from multiprocessing import Pool, cpu_count
 from subprocess import Popen, PIPE
-from multiprocessing import Pool
+from functools import reduce
 from .shared import *
 
 import numpy as np
@@ -250,7 +251,12 @@ def do_collect(line_breaks, variables, cmdlines, patterns, runs, filepath, logfi
     if runs <= 0:
         return logger.print("--runs must be >= 1")
     
+    if jobs <= 0:
+        jobs = cpu_count()
+    
     variables.append(RunVariable(runs))
+    
+    numCombinations = reduce(lambda a,b : a*len(b.get_values()), variables, 1)
     
     ########################### DISPLAY SUMMARY ###########################
     
@@ -258,6 +264,7 @@ def do_collect(line_breaks, variables, cmdlines, patterns, runs, filepath, logfi
     
     logger.print("Filepath:", filepath)
     logger.print("Logfilepath:", logfilepath)
+    logger.print("Combinations:", numCombinations)
     logger.print("Runs:", runs)
     logger.print("Jobs:", jobs)
     
@@ -280,7 +287,7 @@ def do_collect(line_breaks, variables, cmdlines, patterns, runs, filepath, logfi
     
     ########################### PARALLEL TASKS ###########################
     
-    logger.print_pagebreak("RUNNING TASKS")
+    logger.print(\n"Creating Tasks...")
     
     tasks = []
     idd = -1
@@ -292,6 +299,8 @@ def do_collect(line_breaks, variables, cmdlines, patterns, runs, filepath, logfi
             prepared_cmd = cmdline.format(*sequence)
             tasks.append([k, idd, copy.copy(sequence), copy.copy(named), prepared_cmd])
             k += 1
+    
+    logger.print_pagebreak("RUNNING {} TASK(S)".format(len(tasks)))
     
     with Pool(jobs) as p:
         with open(filepath, "w") as fout:
@@ -365,7 +374,7 @@ def main(argv):
     patterns = []
     cmdline = []
     runs = 1
-    jobs = 1
+    jobs = 0
     
     while args.has_next():
         cmd = args.pop_cmd()

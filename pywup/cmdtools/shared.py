@@ -20,10 +20,10 @@ class Args:
         self.current = 0
     
     def has_parameter(self):
-        return self.has_next() and not self.args[self.current].startswith("-")
+        return self.has_next() and not self.args[self.current].startswith("--")
     
     def has_cmd(self):
-        return self.has_next() and self.args[self.current].startswith("-")
+        return self.has_next() and self.args[self.current].startswith("--")
     
     def has_next(self):
         return self.current < len(self.args)
