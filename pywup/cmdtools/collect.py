@@ -91,7 +91,7 @@ class ArithmeticVariable:
         
         first = float(args.pop_parameter())
         last  = float(args.pop_parameter())
-        step  = float(args.pop_parameter()) if not args.has_cmd() else 1
+        step  = float(args.pop_parameter()) if args.has_parameter() else 1
         self.values = np.arange(first, last, step)
     
     def get_name(self):
@@ -108,7 +108,7 @@ class GeometricVariable:
         
         first = float(args.pop_parameter())
         last  = float(args.pop_parameter())
-        step  = float(args.pop_parameter()) if args.has_cmd() else 2.0
+        step  = float(args.pop_parameter()) if args.has_parameter() else 2.0
         
         if step == 1:
             raise RuntimeError("step cannot be equal to 1")
@@ -160,6 +160,16 @@ def perm_variables(variables, output=[], named_output=[]):
             output.pop()
             named_output.pop()
 
+
+class Task:
+
+    def __init__(self, row_id, perm_id, run_id, sequence, named, cmd):
+        self.row_id = row_id
+        self.perm_id = perm_id
+        self.run_id = run_id
+        self.sequence = sequence
+        self.named = named
+        self.cmd = cmd
 
 class BasicLog:
 
@@ -227,10 +237,8 @@ class BasicLog:
         self.debug(self.page(msg))
 
 
-def f(data):
-    k, idd, sequence, named, prepared_cmd = data
-    rows = invoke(prepared_cmd)
-    return k, rows
+def f(task):
+    return task.row_id, invoke(task.cmd)
 
 
 def do_collect(line_breaks, variables, cmdlines, patterns, runs, filepath, logfilepath, jobs):
@@ -254,7 +262,7 @@ def do_collect(line_breaks, variables, cmdlines, patterns, runs, filepath, logfi
     if jobs <= 0:
         jobs = cpu_count()
     
-    variables.append(RunVariable(runs))
+    #variables.append(RunVariable(runs))
     
     numCombinations = reduce(lambda a,b : a*len(b.get_values()), variables, 1)
     
@@ -285,26 +293,29 @@ def do_collect(line_breaks, variables, cmdlines, patterns, runs, filepath, logfi
     for v in cmdlines:
         logger.print("    {}".format(v))
     
-    ########################### PARALLEL TASKS ###########################
+    ########################### CREATE PARALLEL TASKS ###########################
     
     logger.print("\nCreating Tasks...")
     
     tasks = []
-    idd = -1
-    k = 0
+    ridd = -1
+    pidd = -1
     
     for sequence, named in perm_variables(variables):
-        idd += 1
-        for cmdline in cmdlines:
-            prepared_cmd = cmdline.format(*sequence)
-            tasks.append([k, idd, copy.copy(sequence), copy.copy(named), prepared_cmd])
-            k += 1
+        pidd += 1
+        for _ in range(runs):
+            ridd += 1
+            for cmdline in cmdlines:
+                task = Task(row_id=len(tasks), perm_id=pidd, run_id=ridd, sequence=copy.copy(sequence), named=copy.copy(named), cmd=cmdline.format(*sequence))
+                tasks.append(task)
     
+    ########################### EXECUTE PARALLEL TASKS ###########################
+
     logger.print_pagebreak("RUNNING {} TASK(S)".format(len(tasks)))
     
     with Pool(jobs) as p:
         with open(filepath, "w") as fout:
-            header = [v.get_name() for v in variables] + [p.get_name() for p in patterns]
+            header = ["PERMID", "RUNID"] + [v.get_name() for v in variables] + [p.get_name() for p in patterns]
             writer = csv.writer(fout, delimiter=";", quoting=csv.QUOTE_MINIMAL)
             writer.writerow(header)
             
@@ -313,7 +324,8 @@ def do_collect(line_breaks, variables, cmdlines, patterns, runs, filepath, logfi
                 ignore_once = True
                 
                 for k, rows in tqdm.tqdm(p.imap(f, tasks), total=len(tasks)):
-                    _, idd, sequence, named, prepared_cmd = tasks[k]
+                    #_, idd, sequence, named, prepared_cmd = tasks[k]
+                    task = tasks[k]
                     
                     for row in rows:
                         doBreak = False
@@ -326,7 +338,8 @@ def do_collect(line_breaks, variables, cmdlines, patterns, runs, filepath, logfi
                             if ignore_once:
                                 ignore_once = False
                             else:
-                                writer.writerow(tasks[k-1][2] + [p.get_value() for p in patterns])
+                                ptask = tasks[k-1]
+                                writer.writerow([ptask.perm_id, ptask.run_id] + task.sequence + [p.get_value() for p in patterns])
                                 fout.flush()
                             
                             for p in patterns:
@@ -338,20 +351,22 @@ def do_collect(line_breaks, variables, cmdlines, patterns, runs, filepath, logfi
                 if ignore_once:
                     ignore_once = False
                 else:
-                    writer.writerow(sequence + [p.get_value() for p in patterns])
+                    writer.writerow([task.perm_id, task.run_id] + task.sequence + [p.get_value() for p in patterns])
                     fout.flush()
             
             # Line breaks are defined by permutations, each combination creates a single line
             else:
-                last_idd = tasks[0][1] if tasks else None
+                last_idd = tasks[0].run_id if tasks else None
                 
                 for k, rows in tqdm.tqdm(p.imap(f, tasks), total=len(tasks)):
-                    _, idd, sequence, named, prepared_cmd = tasks[k]
+                    #_, idd, sequence, named, prepared_cmd = tasks[k]
+                    task = tasks[k]
                     
-                    if last_idd != idd:
-                        last_idd = idd
+                    if last_idd != task.run_id:
+                        last_idd = task.run_id
                         
-                        writer.writerow(tasks[k-1][2] + [p.get_value() for p in patterns])
+                        ptask = tasks[k-1]
+                        writer.writerow([ptask.perm_id, ptask.run_id] + ptask.sequence + [p.get_value() for p in patterns])
                         fout.flush()
                         
                         for p in patterns:
@@ -361,7 +376,7 @@ def do_collect(line_breaks, variables, cmdlines, patterns, runs, filepath, logfi
                         for p in patterns:
                             p.check(row)
                 
-                writer.writerow(sequence + [p.get_value() for p in patterns])
+                writer.writerow([task.perm_id, task.run_id] + task.sequence + [p.get_value() for p in patterns])
                 fout.flush()
 
 
@@ -369,6 +384,7 @@ def main(argv):
     
     args = Args(argv)
     filepath = "./collect_output.csv"
+    logfilepath = None
     line_breaks = []
     variables = []
     patterns = []

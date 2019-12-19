@@ -35,6 +35,12 @@ def wup(debug=False):
         else:
             from pywup.cmdtools.backup import main
     
+    elif cmd == "q":
+        if debug:
+            from cmdtools.q import main
+        else:
+            from pywup.cmdtools.q import main
+    
     else:
         return print("Unknown wup command:", cmd)
     
