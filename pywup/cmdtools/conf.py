@@ -3,21 +3,21 @@ import yaml
 import os
 
 
-def config_local_filepath(folderpath):
+def _local_filepath(folderpath):
     return os.path.join(folderpath, ".wup", "config.yml")
 
 
-def config_global_filepath():
+def _global_filepath():
     return os.path.expanduser("~/.local/wup/config.yml")
 
 
-def config_read(filepath):
+def read(filepath):
     with open(filepath, "r") as fin:
         data = yaml.load(fin)
         return data
 
 
-def config_write(data, filepath):
+def write(data, filepath):
     folderpath = os.path.dirname(filepath)
     os.makedirs(folderpath, exist_ok=True)
 
@@ -25,16 +25,16 @@ def config_write(data, filepath):
         yaml.dump(data, fout, default_flow_style=False)
 
 
-def config_init(folderpath):
-    filepath = config_local_filepath(folderpath)
-    config_write({}, filepath)
+def init(folderpath):
+    filepath = _local_filepath(folderpath)
+    write({}, filepath)
 
 
-def config_find_local_filepath():
+def find_local_filepath():
     folderpath = os.getcwd()
 
     while True:
-        filepath = config_local_filepath(folderpath)
+        filepath = _local_filepath(folderpath)
 
         if os.path.exists(filepath):
             return filepath
@@ -45,12 +45,12 @@ def config_find_local_filepath():
         folderpath = os.path.dirname(folderpath)
 
 
-def config_search(filepath, addr, pop=False):
+def search(filepath, addr, pop=False):
     if not addr or not filepath:
         return None
     
     try:
-        data = config_read(filepath)
+        data = read(filepath)
 
         for a in addr[:-1]:
             if a in data:
@@ -63,7 +63,7 @@ def config_search(filepath, addr, pop=False):
         if key in data:
             if pop:
                 value = data.pop(key)
-                config_write(data, filepath)
+                write(data, filepath)
                 return value
             else:
                 return data[key]
@@ -73,7 +73,7 @@ def config_search(filepath, addr, pop=False):
         return None
 
 
-def config_parse_cmds(args, scope="local"):
+def _parse_cmds(args, scope="local"):
     value = None
     addr = None
 
@@ -106,60 +106,68 @@ def config_parse_cmds(args, scope="local"):
                 addr = tmp.split(":")
     
     return scope, addr, value
-    
 
-def config_get(args, pop=False, scope="any"):
-    scope, addr, value = config_parse_cmds(args, scope=scope)
+
+def _smallheader(title, desc):
+    print("\n\033[1;97m-- {} ({}) --\033[0m".format(title, desc))
+
+
+def get(args, pop=False, scope="any"):
+    scope, addr, value = _parse_cmds(args, scope=scope)
     
     if value:
         error("Assignment is not valid in this operation")
 
-    if scope in ["any", "local"]:
-        filepath = config_find_local_filepath()
-
-        if addr:
-            value = config_search(filepath, addr, pop)
-
-            if value:
-                return value
-        
-        else:
-            if filepath and os.path.exists(filepath):
-                print("-- LOCAL --")
-                os.system("cat \"" + filepath + "\"")
-            else:
-                print("-- LOCAL CONFIG NOT FOUND --")
-    
-    if scope in ["any", "global"]:
-        filepath = config_global_filepath()
-
-        if addr:
-            value = config_search(filepath, addr, pop)
-
-            if value:
-                return value
-        
-        else:
-            if filepath and os.path.exists(filepath):
-                print("-- GLOBAL --")
-                os.system("cat \"" + filepath + "\"")
-            else:
-                print("-- GLOBAL CONFIG NOT FOUND --")
-    
     if addr:
+        if scope in ["any", "local"]:
+            filepath = find_local_filepath()
+
+            value = search(filepath, addr, pop)
+
+            if value:
+                return value
+        
+        if scope in ["any", "global"]:
+            filepath = _global_filepath()
+
+            value = search(filepath, addr, pop)
+
+            if value:
+                return value
+    
         error("Attribute not found")
+
     else:
+        if scope in ["any", "local"]:
+            filepath = find_local_filepath()
+
+            if filepath and os.path.exists(filepath):
+                _smallheader("LOCAL", filepath)
+                os.system("cat \"" + filepath + "\"")
+            else:
+                _smallheader("LOCAL", "NOT FOUND")
+        
+        if scope in ["any", "global"]:
+            filepath = _global_filepath()
+
+            if filepath and os.path.exists(filepath):
+                _smallheader("GLOBAL", filepath)
+                os.system("cat \"" + filepath + "\"")
+            else:
+                _smallheader("GLOBAL", "NOT FOUND")
+        
+        print()
         return None
 
 
-def config_set(args):
-    scope, addr, value = config_parse_cmds(args, scope="local")
+def assign(args):
+    scope, addr, value = _parse_cmds(args, scope="local")
     
     if scope == "global":
-        filepath = config_global_filepath()
+        filepath = _global_filepath()
     
     elif scope == "local":
-        filepath = config_local_filepath(os.getcwd())
+        filepath = _local_filepath(os.getcwd())
 
     elif scope == "any":
         error("--any is not a valid scope for this operation")
@@ -171,7 +179,7 @@ def config_set(args):
         error("Missing keys")
     
     try:
-        root = config_read(filepath)
+        root = read(filepath)
     except:
         root = {}
     
@@ -184,11 +192,11 @@ def config_set(args):
         data = data[a]
     
     data[addr[-1]] = value
-    config_write(root, filepath)
+    write(root, filepath)
 
 
-def config_pop(args):
-    return config_get(args, pop=True, scope="local")
+def pop(args):
+    return get(args, pop=True, scope="local")
 
 
 def main(argv):
@@ -198,18 +206,18 @@ def main(argv):
 
     try:
         if cmd == "get":
-            value = config_get(args)
+            value = get(args)
             if value:
                 print(value)
         
         elif cmd == "set":
-            config_set(args)
+            assign(args)
         
         elif cmd == "pop":
-            print(config_pop(args))
+            print(pop(args))
         
         elif cmd == "init":
-            config_init(os.getcwd())
+            init(os.getcwd())
         
         else:
             abort("Unknown config parameter:", cmd)
