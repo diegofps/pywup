@@ -19,6 +19,9 @@ class Args:
         self.args = args
         self.current = 0
     
+    def all(self):
+        return self.args[self.current:]
+    
     def has_parameter(self):
         return self.has_next() and not self.args[self.current].startswith("--")
     
