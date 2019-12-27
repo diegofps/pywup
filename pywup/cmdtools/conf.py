@@ -1,6 +1,14 @@
-from .shared import Args
+from .shared import Args, abort, WupError, error
 import yaml
 import os
+
+
+def config_local_filepath(folderpath):
+    return os.path.join(folderpath, ".wup", "config.yml")
+
+
+def config_global_filepath():
+    return os.path.expanduser("~/.local/wup/config.yml")
 
 
 def config_read(filepath):
@@ -17,87 +25,151 @@ def config_write(data, filepath):
         yaml.dump(data, fout, default_flow_style=False)
 
 
-def config_search(filepath, addr):
+def config_init(folderpath):
+    filepath = config_local_filepath(folderpath)
+    config_write({}, filepath)
+
+
+def config_find_local_filepath():
+    folderpath = os.getcwd()
+
+    while True:
+        filepath = config_local_filepath(folderpath)
+
+        if os.path.exists(filepath):
+            return filepath
+
+        if folderpath == "/":
+            return None
+
+        folderpath = os.path.dirname(folderpath)
+
+
+def config_search(filepath, addr, pop=False):
+    if not addr or not filepath:
+        return None
+    
     try:
         data = config_read(filepath)
-        for a in addr:
+
+        for a in addr[:-1]:
             if a in data:
                 data = data[a]
             else:
                 return None
-        return data
+        
+        key = addr[-1]
+
+        if key in data:
+            if pop:
+                value = data.pop(key)
+                config_write(data, filepath)
+                return value
+            else:
+                return data[key]
+        else:
+            return None
     except:
         return None
 
 
-def config_get(args):
-    addr = args.all()
+def config_parse_cmds(args, scope="local"):
+    value = None
+    addr = None
 
-    folderpath = os.getcwd()
+    while args.has_next():
+        if args.has_cmd():
+            cmd = args.pop_cmd()
 
-    while True:
-        filepath = os.path.join(folderpath, ".wup", "config.yml")
-        value = config_search(filepath, addr)
+            if cmd == "--global":
+                scope = "global"
+            
+            elif cmd == "--local":
+                scope = "local"
 
-        if value:
-            return value
+            elif cmd == "--any":
+                scope = "any"
 
-        if folderpath == "/":
-            break
+            else:
+                error("Invalid parameter:", cmd)
+        
+        else:
+            tmp = args.pop_parameter()
 
-        folderpath = os.path.dirname(folderpath)
+            if value:
+                error("Too many parameters")
+            
+            elif addr:
+                value = tmp
+            
+            else:
+                addr = tmp.split(":")
     
-    filepath = os.path.expanduser("~/.local/wup/config.yml")
-    value = config_search(filepath, addr)
+    return scope, addr, value
+    
 
+def config_get(args, pop=False, scope="any"):
+    scope, addr, value = config_parse_cmds(args, scope=scope)
+    
     if value:
-        return value
+        error("Assignment is not valid in this operation")
+
+    if scope in ["any", "local"]:
+        filepath = config_find_local_filepath()
+
+        if addr:
+            value = config_search(filepath, addr, pop)
+
+            if value:
+                return value
+        
+        else:
+            if filepath and os.path.exists(filepath):
+                print("-- LOCAL --")
+                os.system("cat \"" + filepath + "\"")
+            else:
+                print("-- LOCAL CONFIG NOT FOUND --")
     
-    print("Attribute not found")
-    exit(1)
+    if scope in ["any", "global"]:
+        filepath = config_global_filepath()
+
+        if addr:
+            value = config_search(filepath, addr, pop)
+
+            if value:
+                return value
+        
+        else:
+            if filepath and os.path.exists(filepath):
+                print("-- GLOBAL --")
+                os.system("cat \"" + filepath + "\"")
+            else:
+                print("-- GLOBAL CONFIG NOT FOUND --")
+    
+    if addr:
+        error("Attribute not found")
+    else:
+        return None
 
 
 def config_set(args):
-    if args.has_next() and args.sneak() == "global":
-        filepath = os.path.expanduser("~/.local/wup/config.yml")
-        args.pop_parameter()
-        addr = args.all()
-
-    else:
-        filepath = os.path.join(os.getcwd(), ".wup", "config.yml")
-        addr = args.all()
-
-    try:
-        root = config_read(filepath)
-    except:
-        root = {}
+    scope, addr, value = config_parse_cmds(args, scope="local")
     
-    data = root
-
-    for a in addr[:-2]:
-        if not a in data:
-            data[a] = {}
-        
-        try:
-            data = data[a]
-        except:
-            print("Excepted {} to be a dictionary" % a)
+    if scope == "global":
+        filepath = config_global_filepath()
     
-    data[addr[-2]] = addr[-1]
+    elif scope == "local":
+        filepath = config_local_filepath(os.getcwd())
 
-    config_write(root, filepath)
+    elif scope == "any":
+        error("--any is not a valid scope for this operation")
 
-
-def config_drop(args):
-    if args.has_next() and args.sneak() == "global":
-        filepath = os.path.expanduser("~/.local/wup/config.yml")
-        args.pop_parameter()
-        addr = args.all()
-
-    else:
-        filepath = os.path.join(os.getcwd(), ".wup", "config.yml")
-        addr = args.all()
-
+    if not value:
+        error("Missing new value")
+    
+    if not addr:
+        error("Missing keys")
+    
     try:
         root = config_read(filepath)
     except:
@@ -106,41 +178,43 @@ def config_drop(args):
     data = root
 
     for a in addr[:-1]:
-        if not a in data:
-            print("Attribute not found,", a)
-            exit(1)
+        if not a in data or not type(data[a]) is dict:
+            data[a] = {}
         
-        try:
-            data = data[a]
-        except:
-            print("Excepted {} to be a dictionary" % a)
+        data = data[a]
     
-    key = addr[-1]
+    data[addr[-1]] = value
+    config_write(root, filepath)
 
-    if key in data:
-        try:
-            data.pop(key)
-            config_write(root, filepath)
-        except:
-            print("Excepted {} to be a dictionary" % key)
-    
-    else:
-        print("Attibute not found:", key)
-        exit(1)
+
+def config_pop(args):
+    return config_get(args, pop=True, scope="local")
 
 
 def main(argv):
+
     args = Args(argv)
     cmd = args.pop_parameter()
 
-    if cmd == "get":
-        config_get(args)
+    try:
+        if cmd == "get":
+            value = config_get(args)
+            if value:
+                print(value)
+        
+        elif cmd == "set":
+            config_set(args)
+        
+        elif cmd == "pop":
+            print(config_pop(args))
+        
+        elif cmd == "init":
+            config_init(os.getcwd())
+        
+        else:
+            abort("Unknown config parameter:", cmd)
 
-    elif cmd == "set":
-        config_set(args)
+    except WupError as e:
+        abort(e.message)
 
-    elif cmd == "drop":
-        config_drop(args)
 
-    else:
-        print("Unknown config parameter:", cmd)

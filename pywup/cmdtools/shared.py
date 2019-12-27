@@ -2,6 +2,11 @@ import numpy as np
 import csv
 
 
+class WupError(Exception):
+    def __init__(self, message=None):
+        self.message = message
+
+
 def find_column(headers, header):
     return np.where(headers == header)[0].item()
 
@@ -11,6 +16,19 @@ def read_csv(filepath):
         reader = csv.reader(fin, delimiter=';')
         data = [cells for cells in reader]
         return np.array(data, dtype=object)
+
+
+def abort(*args):
+    if args:
+        print(*args)
+    exit(1)
+
+
+def error(*args):
+    if args:
+        raise WupError(" ".join(args))
+    else:
+        raise WupError()
 
 
 class Args:
