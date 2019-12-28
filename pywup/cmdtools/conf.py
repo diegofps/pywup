@@ -103,7 +103,7 @@ def _parse_cmds(args, scope="local"):
                 value = tmp
             
             else:
-                addr = tmp.split(":")
+                addr = tmp.split(".")
     
     return scope, addr, value
 
@@ -116,7 +116,7 @@ def get(args, pop=False, scope="any"):
     scope, addr, value = _parse_cmds(args, scope=scope)
     
     if value:
-        error("Assignment is not valid in this operation")
+        error("Too many parameters")
 
     if addr:
         if scope in ["any", "local"]:
@@ -135,7 +135,7 @@ def get(args, pop=False, scope="any"):
             if value:
                 return value
     
-        error("Attribute not found")
+        error("Attribute not found:", ".".join(addr))
 
     else:
         if scope in ["any", "local"]:
