@@ -47,6 +47,12 @@ def wup(debug=False):
         else:
             from pywup.cmdtools.conf import main
 
+    elif cmd == "env":
+        if debug:
+            from cmdtools.env import main
+        else:
+            from pywup.cmdtools.env import main
+
     else:
         return print("Unknown wup command:", cmd)
     
