@@ -53,6 +53,12 @@ def wup(debug=False):
         else:
             from pywup.cmdtools.env import main
 
+    elif cmd == "cluster":
+        if debug:
+            from cmdtools.cluster import main
+        else:
+            from pywup.cmdtools.cluster import main
+
     else:
         return print("Unknown wup command:", cmd)
     
