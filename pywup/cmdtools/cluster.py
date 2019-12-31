@@ -108,7 +108,7 @@ def do_open(args):
     idd, project, tag = get_container_by_cluster_and_node_number(clustername, node_number)
     variables, templates = parse_env(tag, "cluster open")
 
-    cmd = get_open_cmd(templates, idd, templates["OPEN"])
+    cmd = get_open_cmd(idd, templates["OPEN"])
 
     system_run("docker start " + idd)
     system_run(cmd, suppressInterruption=True)

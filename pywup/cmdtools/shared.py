@@ -13,7 +13,7 @@ def quote(str):
     return '"' + re.sub(r'([\'\"\\])', r'\\\1', str) + '"'
 
 
-def get_open_cmd(templates, container_name, bash_init, tty=True):
+def get_open_cmd(container_name, bash_init, tty=True):
     o = "".join(["source \"$HOME/.bashrc\"\n"] + bash_init)
     k = quote(o)
     b = quote("bash --init-file <(echo " + k + ")")
@@ -37,7 +37,7 @@ def parse_env(tag, cmd):
     bash_init = [k + "=\"" + variables[k] + "\"\n" for k in variables]
     bash_init.append("cd %s\n" % variables["WORKDIR"])
 
-    for name in ["LAUNCH", "POSTDEPLOY", "INIT", "OPEN", "EXEC"]:
+    for name in ["LAUNCH", "POSTDEPLOY", "INIT", "OPEN", "EXEC", "IMPORT"]:
         templates[name] = bash_init + templates[name]
     
     volumes = templates["VOLUMES"]
@@ -62,18 +62,18 @@ def parse_env(tag, cmd):
 
 
 def get_export_filepath(project, tag):
-    return "wup_{}__{}.gz".format(project, tag)
+    return "wup__{}__{}.gz".format(project, tag)
 
 
 def get_container_name(projectname, tag, clustername=None, i=None, quantity=None):
     if clustername:
         return "wcl__{}__{}__{}__{}".format(clustername, projectname, tag, i)
     else:
-        return "wup_{}_{}".format(projectname, tag)
+        return "wup__{}_{}".format(projectname, tag)
 
 
 def get_image_name(projectname, tag):
-    return "wup_{}:{}".format(projectname, tag)
+    return "wup__{}:{}".format(projectname, tag)
 
 
 def parse_image_name(name):
@@ -97,42 +97,96 @@ def parse_image_name(name):
     return projectname, tag
 
 
-def system_run(cmd, write=None, read=False, suppressInterruption=False):
+def system_run(cmds, write=None, read=False, suppressInterruption=False):
+    if type(cmds) is not list:
+        cmds = [cmds]
+    
+    if not cmds:
+        return
+    
     try:
         if write and read:
-            args = shlex.split(cmd)
-            p = Popen(args, stdout=PIPE, stdin=PIPE)
+            args = shlex.split(cmds[0])
+            ps = [Popen(args, stdout=PIPE, stdin=PIPE)]
 
+            for i in range(1, len(cmds)):
+                args = shlex.split(cmds[i])
+                previous = ps[i-1]
+                current = Popen(args, stdout=PIPE, stdin=previous.stdout)
+                ps.append(current)
+
+            front = ps[0]
             for line in write:
-                p.stdin.write(line.encode())
-            p.stdin.close()
+                front.stdin.write(line.encode())
+            front.stdin.close()
 
-            lines = [line.decode("utf-8") for line in p.stdout]
-            status = p.wait()
+            back = ps[-1]
+            lines = [line.decode("utf-8") for line in back.stdout]
+            status = back.wait()
 
-            return status, lines
+            return status,lines
 
         elif write:
-            args = shlex.split(cmd)
-            p = Popen(args, stdin=PIPE)
+            args = shlex.split(cmds[0])
 
+            if len(cmds) == 1:
+                ps = [Popen(args, stdin=PIPE)]
+            else:
+                ps = [Popen(args, stdout=PIPE, stdin=PIPE)]
+
+            final = len(cmds) - 1
+            for i in range(1, final):
+                args = shlex.split(cmds[i])
+                previous = ps[i-1]
+
+                if i + 1 == final:
+                    ps.append(Popen(args, stdin=previous.stdout))
+                else:
+                    ps.append(Popen(args, stdout=PIPE, stdin=previous.stdout))
+
+            front = ps[0]
             for line in write:
-                p.stdin.write(line.encode())
-            p.stdin.close()
+                front.stdin.write(line.encode())
+            front.stdin.close()
 
-            return p.wait(), None
+            return ps[-1].wait(), None
 
         elif read:
-            args = shlex.split(cmd)
-            p = Popen(args, stdout=PIPE)
+            args = shlex.split(cmds[0])
+            ps = [Popen(args, stdout=PIPE)]
 
-            lines = [line.decode("utf-8") for line in p.stdout]
-            status = p.wait()
+            for i in range(1, len(cmds)):
+                args = shlex.split(cmds[i])
+                previous = ps[i-1]
+                current = Popen(args, stdout=PIPE, stdin=previous.stdout)
+                ps.append(current)
+
+            back = ps[-1]
+            lines = [line.decode("utf-8") for line in back.stdout]
+            status = back.wait()
 
             return status, lines
 
+        elif len(cmds) == 1:
+            return os.system(cmds[0]), None
+        
         else:
-            return os.system(cmd), None
+            args = shlex.split(cmds[0])
+            ps = [Popen(args, stdout=PIPE)]
+
+            for i in range(1, len(cmds)-1):
+                args = shlex.split(cmds[i])
+                previous = ps[i-1]
+                current = Popen(args, stdout=PIPE, stdin=previous.stdout)
+                ps.append(current)
+
+            args = shlex.split(cmds[-1])
+            previous = ps[-1]
+            current = Popen(args, stdin=previous.stdout)
+            ps.append(current)
+
+            return ps[-1].wait(), None
+
     except KeyboardInterrupt as e:
         if not suppressInterruption:
             raise e
@@ -242,12 +296,12 @@ class Args:
     
     def pop_parameter(self):
         if not self.has_parameter():
-            raise RuntimeError("Unexpected argument, expecting a command parameter")
+            raise RuntimeError("Wrong argument, expecting a command parameter")
         return self.pop()
     
     def pop_cmd(self):
         if not self.has_cmd():
-            raise RuntimeError("Unexpected argument, expecting a command: ", self.sneak())
+            raise RuntimeError("Wrong argument, expecting a command: ", self.sneak())
         return self.pop()
 
 
