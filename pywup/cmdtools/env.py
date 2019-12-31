@@ -7,13 +7,11 @@ import os
 def do_build(args):
     projectname, tag = parse_image_name(args.pop_parameter())
     variables, templates = parse_env(tag, "build")
+    cont_name = get_container_name(projectname, tag)
     
     volumes = "-v " + " -v ".join(templates["VOLUMES"]) if "VOLUMES" in templates else ""
-
     base = variables["BASE"]
-    init = templates["INIT"]
-
-    cont_name = get_container_name(projectname, tag)
+    init = templates["BUILD"]
 
     system_run("docker rm %s 2> /dev/null" % cont_name)
     system_run("docker run -i --name {} {} {}".format(cont_name, volumes, base), write=init)
@@ -47,15 +45,13 @@ def do_launch(args):
     projectname, tag = parse_image_name(args.pop_parameter())
     variables, templates = parse_env(tag, "launch")
     cont_name = get_container_name(projectname, tag)
-
     run = templates["LAUNCH"] + ["\nexit\n"]
 
     print("Starting container...")
     system_run("docker start " + cont_name)
 
     print("Connecting to terminal...")
-    cmd = get_open_cmd(cont_name, run)
-    system_run(cmd)
+    system_run(get_open_cmd(cont_name, run))
 
 
 def do_exec(args):
@@ -70,8 +66,7 @@ def do_exec(args):
     system_run("docker start " + cont_name)
 
     print("Connecting to terminal...")
-    cmd = get_open_cmd(cont_name, run)
-    system_run(cmd)
+    system_run(get_open_cmd(cont_name, run))
 
 
 def do_export(args):
@@ -84,29 +79,26 @@ def do_export(args):
 
 
 def do_import(args):
-    #import pdb; pdb.set_trace()
     filepath = args.pop_parameter()
 
     print("Importing image...")
-    status, rows = system_run(["zcat {}".format(filepath), "docker load -q"], read=True)
+    system_run(["zcat {}".format(filepath), "docker load -q"])
+    #project, tag = parse_image_name(rows[0].split("__")[1].strip())
 
-    project, tag = parse_image_name(rows[0].split("__")[1].strip())
-    variables, templates = parse_env(tag, "import")
+
+def do_new(args):
+    project, tag = parse_image_name(args.pop_parameter())
+    variables, templates = parse_env(tag, "new")
     img_name = get_image_name(project, tag)
-
-    volumes = "-v " + " -v ".join(templates["VOLUMES"]) if "VOLUMES" in templates else ""
-    
-    init = templates["IMPORT"]
-
     cont_name = get_container_name(project, tag)
-
+    volumes = "-v " + " -v ".join(templates["VOLUMES"]) if "VOLUMES" in templates else ""
+    init = templates["NEW"]
+    
     print("Removing previous container...")
     system_run("docker rm %s 2> /dev/null" % cont_name)
 
-    print("Creating container from imported image...")
-    #import pdb; pdb.set_trace()
+    print("Creating container from image...")
     system_run("docker run -i --name {} {} {}".format(cont_name, volumes, img_name), write=init)
-    #print(rows)
 
 
 def do_rm(args):
@@ -168,6 +160,9 @@ def main(argv):
 
         elif cmd == "lsi":
             do_lsi(args)
+
+        elif cmd == "new":
+            do_new(args)
 
         else:
             abort("Invalid option:", cmd)

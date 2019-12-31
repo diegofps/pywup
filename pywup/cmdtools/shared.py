@@ -18,7 +18,7 @@ def get_open_cmd(container_name, bash_init, tty=True):
     k = quote(o)
     b = quote("bash --init-file <(echo " + k + ")")
     tty = "-it " if tty else "-i "
-    c = "docker exec " + tty + container_name + " bash -c " + b.replace("$", "\$")
+    c = "docker exec " + tty + container_name + " bash -c " + b.replace("$", "\\$")
     return c
 
 
@@ -37,7 +37,7 @@ def parse_env(tag, cmd):
     bash_init = [k + "=\"" + variables[k] + "\"\n" for k in variables]
     bash_init.append("cd %s\n" % variables["WORKDIR"])
 
-    for name in ["LAUNCH", "POSTDEPLOY", "INIT", "OPEN", "EXEC", "IMPORT"]:
+    for name in ["LAUNCH", "POSTDEPLOY", "BUILD", "OPEN", "EXEC", "NEW"]:
         templates[name] = bash_init + templates[name]
     
     volumes = templates["VOLUMES"]

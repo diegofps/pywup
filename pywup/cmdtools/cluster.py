@@ -40,12 +40,12 @@ def get_containers_in_cluster(clustername, abortOnFail=False):
     return [x.strip() for x in rows]
 
 
-def parallel_do_create(task):
+def parallel_do_new(task):
     system_run("docker rm %s 2> /dev/null" % task.cont_name)
     system_run("docker run -i --name {} {} {}".format(task.cont_name, task.volumes, task.base), ["exit\n"])
 
 
-def do_create(args):
+def do_new(args):
     clustername = args.pop_parameter()
     image = args.pop_parameter()
     qtt = int(args.pop_parameter())
@@ -71,7 +71,7 @@ def do_create(args):
     print("Creating cluster...")
     jobs = cpu_count()
     with Pool(jobs) as p:
-        for _ in tqdm.tqdm(p.imap(parallel_do_create, tasks), total=len(tasks)):
+        for _ in tqdm.tqdm(p.imap(parallel_do_new, tasks), total=len(tasks)):
             pass
     
     if outfile:
@@ -114,9 +114,6 @@ def do_open(args):
     system_run(cmd, suppressInterruption=True)
     #system_run("docker stop " + idd)
 
-def do_deploy(args):
-    error("Not implemented yet")
-
 
 def main(argv):
     try:
@@ -124,8 +121,8 @@ def main(argv):
 
         cmd = args.pop_parameter()
 
-        if cmd == "create":
-            do_create(args)
+        if cmd == "new":
+            do_new(args)
         
         elif cmd == "rm":
             do_rm(args)
@@ -141,6 +138,9 @@ def main(argv):
         
         elif cmd == "deploy":
             do_deploy(args)
+
+        elif cmd == "ls":
+            do_ls(args)
 
         else:
             abort("Invalid parameter:", cmd)
