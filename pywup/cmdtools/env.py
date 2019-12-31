@@ -1,4 +1,4 @@
-from .shared import Args, error, abort, WupError, parse_templates, system_run, parse_image_name, get_image_name, get_container_name, get_export_filepath, parse_env
+from .shared import Args, error, abort, WupError, parse_templates, system_run, parse_image_name, get_image_name, get_container_name, get_export_filepath, parse_env, get_open_cmd
 
 import sys
 import os
@@ -6,7 +6,7 @@ import os
 
 def do_build(args):
     projectname, tag = parse_image_name(args.pop_parameter())
-    variables, templates = parse_env(tag)
+    variables, templates = parse_env(tag, "build")
     
     volumes = "-v " + " -v ".join(templates["VOLUMES"]) if "VOLUMES" in templates else ""
 
@@ -22,17 +22,13 @@ def do_build(args):
 def do_open(args):
     projectname, tag = parse_image_name(args.pop_parameter())
     cont_name = get_container_name(projectname, tag)
+    variables, templates = parse_env(tag, "open")
 
     print("Starting container...")
     system_run("docker start " + cont_name)
 
     print("Connecting to terminal...")
-    system_run("docker exec -it {} bash".format(cont_name))
-
-    print("Stopping container, this may take a few seconds...")
-    system_run("docker stop {}".format(cont_name))
-
-    print("Done!")
+    system_run(get_open_cmd(templates, cont_name, templates["OPEN"], True))
 
 
 def do_commit(args):
@@ -51,46 +47,33 @@ def do_commit(args):
 
 def do_launch(args):
     projectname, tag = parse_image_name(args.pop_parameter())
-    variables, templates = parse_env(tag)
+    variables, templates = parse_env(tag, "launch")
     cont_name = get_container_name(projectname, tag)
 
-    run = templates["LAUNCH"]
-
-    if not run:
-        error("This env does not support run")
+    run = templates["LAUNCH"] + ["\nexit\n"]
 
     print("Starting container...")
     system_run("docker start " + cont_name)
 
     print("Connecting to terminal...")
-    system_run("docker exec -i {} bash".format(cont_name), run)
-
-    print("Stopping container, this may take a few seconds...")
-    system_run("docker stop {}".format(cont_name))
-
-    print("Done!")
+    cmd = get_open_cmd(templates, cont_name, run)
+    system_run(cmd)
 
 
 def do_exec(args):
     projectname, tag = parse_image_name(args.pop_parameter())
     cmd = args.pop_parameter()
     cont_name = get_container_name(projectname, tag)
+    variables, templates = parse_env(tag, "exec")
 
-    run = [cmd]
-
-    if not run:
-        error("This env does not support run")
+    run = templates["EXEC"] + [cmd, "\nexit\n"]
 
     print("Starting container...")
     system_run("docker start " + cont_name)
 
     print("Connecting to terminal...")
-    system_run("docker exec -i {} bash".format(cont_name), run)
-
-    print("Stopping container, this may take a few seconds...")
-    system_run("docker stop {}".format(cont_name))
-
-    print("Done!")
+    cmd = get_open_cmd(templates, cont_name, run)
+    system_run(cmd)
 
 
 def do_export(args):

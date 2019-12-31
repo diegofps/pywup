@@ -1,4 +1,4 @@
-from .shared import Args, error, abort, WupError, parse_templates, system_run, parse_image_name, get_image_name, parse_env, get_container_name
+from .shared import Args, error, abort, WupError, parse_templates, system_run, parse_image_name, get_image_name, parse_env, get_container_name, get_open_cmd
 from multiprocessing import Pool, cpu_count
 
 import shlex
@@ -52,7 +52,7 @@ def do_create(args):
     outfile = args.pop_parameter() if args.has_parameter() else None
 
     project, tag = parse_image_name(image)
-    variables, templates = parse_env(tag)
+    variables, templates = parse_env(tag, "cluster create")
 
     volumes = "-v " + " -v ".join(templates["VOLUMES"]) if "VOLUMES" in templates else ""
     base = get_image_name(project, tag)
@@ -101,26 +101,14 @@ def do_stop(args):
     system_run("docker stop " + ids)
 
 
-def quote(str):
-    return '"' + re.sub(r'([\'\"\\])', r'\\\1', str) + '"'
-
-
-def get_open_cmd(templates, tag, idd):
-    o = "\n".join(["source \"$HOME/.bashrc\""] + templates[tag])
-    k = quote(o)
-    b = quote("bash --init-file <(echo " + k + ")")
-    c = "docker exec -it " + idd + " bash -c " + b.replace("$", "\$")
-    return c
-
-
 def do_open(args):
     clustername = args.pop_parameter()
     node_number = args.pop_parameter()
 
     idd, project, tag = get_container_by_cluster_and_node_number(clustername, node_number)
-    variables, templates = parse_env(tag)
+    variables, templates = parse_env(tag, "cluster open")
 
-    cmd = get_open_cmd(templates, "OPEN", idd)
+    cmd = get_open_cmd(templates, idd, templates["OPEN"])
 
     system_run("docker start " + idd)
     system_run(cmd, suppressInterruption=True)

@@ -6,9 +6,23 @@ import shlex
 import yaml
 import csv
 import os
+import re
 
 
-def parse_env(tag):
+def quote(str):
+    return '"' + re.sub(r'([\'\"\\])', r'\\\1', str) + '"'
+
+
+def get_open_cmd(templates, container_name, bash_init, tty=True):
+    o = "".join(["source \"$HOME/.bashrc\"\n"] + bash_init)
+    k = quote(o)
+    b = quote("bash --init-file <(echo " + k + ")")
+    tty = "-it " if tty else "-i "
+    c = "docker exec " + tty + container_name + " bash -c " + b.replace("$", "\$")
+    return c
+
+
+def parse_env(tag, cmd):
     variables, templates = parse_templates(tag)
 
     if not "BASE" in variables:
@@ -17,10 +31,13 @@ def parse_env(tag):
     if not "WORKDIR" in variables:
         variables["WORKDIR"] = "/"
 
-    bash_init = [k + "=\"" + variables[k] + "\"" for k in variables]
+    if not "WUPCMD" in variables:
+        variables["WUPCMD"] = cmd
+
+    bash_init = [k + "=\"" + variables[k] + "\"\n" for k in variables]
     bash_init.append("cd %s\n" % variables["WORKDIR"])
 
-    for name in ["LAUNCH", "POSTDEPLOY", "INIT", "OPEN"]:
+    for name in ["LAUNCH", "POSTDEPLOY", "INIT", "OPEN", "EXEC"]:
         templates[name] = bash_init + templates[name]
     
     volumes = templates["VOLUMES"]
