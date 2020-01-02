@@ -1,7 +1,65 @@
-from .shared import conf_get, conf_set, conf_pop, conf_init
-from .shared import Args, abort, WupError, error
+from pywup.services.system import error, abort, WupError, Args
+from pywup.services import conf
 
 import os
+
+
+def conf_parse_cmds(args, scope="local"):
+    value = None
+    addr = None
+
+    while args.has_next():
+        if args.has_cmd():
+            cmd = args.pop_cmd()
+
+            if cmd == "--global":
+                scope = "global"
+            
+            elif cmd == "--local":
+                scope = "local"
+
+            elif cmd == "--any":
+                scope = "any"
+
+            else:
+                error("Invalid parameter:", cmd)
+        
+        else:
+            tmp = args.pop_parameter()
+
+            if value:
+                error("Too many parameters")
+            
+            elif addr:
+                value = tmp
+            
+            else:
+                addr = tmp
+    
+    return scope, addr, value
+
+
+def conf_set(args):
+    scope, addr, value = conf_parse_cmds(args, scope="local")
+    return conf.set(addr, value, scope=scope)
+
+
+def conf_get(args, scope="any"):
+    scope, addr, value = conf_parse_cmds(args, scope=scope)
+
+    if value:
+        error("Too many parameters")
+
+    return conf.get(addr, scope=scope, pop=False)
+
+
+def conf_pop(args):
+    scope, addr, value = conf_parse_cmds(args, scope="local")
+
+    if value:
+        error("Too many parameters")
+
+    return conf.get(addr, scope=scope)
 
 
 def main(argv):
@@ -22,12 +80,11 @@ def main(argv):
             print(conf_pop(args))
         
         elif cmd == "init":
-            conf_init(os.getcwd())
+            conf.init(os.getcwd())
         
         else:
             abort("Unknown config parameter:", cmd)
 
     except WupError as e:
         abort(e.message)
-
 

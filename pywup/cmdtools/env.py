@@ -1,11 +1,15 @@
-from .shared import Args, error, abort, WupError, parse_templates, system_run, parse_image_name, get_image_name, get_container_name, get_export_filepath, parse_env, get_open_cmd
+from pywup.services.general import parse_env, get_image_name, get_container_name, get_open_cmd, parse_image_name, update_state, get_export_filepath
+from pywup.services.system import error, abort, WupError, run, Args
+from pywup.services import conf
 
 import sys
 import os
 
 
 def do_build(args):
-    projectname, tag = parse_image_name(args.pop_parameter())
+    projectname = conf.get("wup:project", scope="global")
+    tag = conf.get("wup:tag", scope="global")
+
     variables, templates = parse_env(tag, "build")
     cont_name = get_container_name(projectname, tag)
     
@@ -13,49 +17,57 @@ def do_build(args):
     base = variables["BASE"]
     init = templates["BUILD"]
 
-    system_run("docker rm %s 2> /dev/null" % cont_name)
-    system_run("docker run -i --name {} {} {}".format(cont_name, volumes, base), write=init)
+    run("docker rm %s 2> /dev/null" % cont_name)
+    run("docker run -i --name {} {} {}".format(cont_name, volumes, base), write=init)
 
 
 def do_open(args):
-    projectname, tag = parse_image_name(args.pop_parameter())
+    projectname = conf.get("wup:project", scope="global")
+    tag = conf.get("wup:tag", scope="global")
+
     cont_name = get_container_name(projectname, tag)
     variables, templates = parse_env(tag, "open")
 
     print("Starting container...")
-    system_run("docker start " + cont_name)
+    run("docker start " + cont_name)
 
     print("Connecting to terminal...")
-    system_run(get_open_cmd(cont_name, templates["OPEN"], True))
+    run(get_open_cmd(cont_name, templates["OPEN"], True))
 
 
 def do_commit(args):
-    project, tag = parse_image_name(args.pop_parameter())
+    project = conf.get("wup:project", scope="global")
+    tag = conf.get("wup:tag", scope="global")
+
     container_name = get_container_name(project, tag)
     img_name = get_image_name(project, tag)
 
     print("Removing any existing image with this name")
-    system_run("docker rmi {} 2> /dev/null".format(img_name))
+    run("docker rmi {} 2> /dev/null".format(img_name))
 
     print("Creating the new image")
-    system_run("docker commit {} {}".format(container_name, img_name))
+    run("docker commit {} {}".format(container_name, img_name))
 
 
 def do_launch(args):
-    projectname, tag = parse_image_name(args.pop_parameter())
+    projectname = conf.get("wup:project", scope="global")
+    tag = conf.get("wup:tag", scope="global")
+
     variables, templates = parse_env(tag, "launch")
     cont_name = get_container_name(projectname, tag)
     run = templates["LAUNCH"] + ["\nexit\n"]
 
     print("Starting container...")
-    system_run("docker start " + cont_name)
+    run("docker start " + cont_name)
 
     print("Connecting to terminal...")
-    system_run(get_open_cmd(cont_name, run))
+    run(get_open_cmd(cont_name, run))
 
 
 def do_exec(args):
-    projectname, tag = parse_image_name(args.pop_parameter())
+    projectname = conf.get("wup:project", scope="global")
+    tag = conf.get("wup:tag", scope="global")
+
     cmd = args.pop_parameter()
     cont_name = get_container_name(projectname, tag)
     variables, templates = parse_env(tag, "exec")
@@ -63,31 +75,35 @@ def do_exec(args):
     run = templates["EXEC"] + [cmd, "\nexit\n"]
 
     print("Starting container...")
-    system_run("docker start " + cont_name)
+    run("docker start " + cont_name)
 
     print("Connecting to terminal...")
-    system_run(get_open_cmd(cont_name, run))
+    run(get_open_cmd(cont_name, run))
 
 
 def do_export(args):
-    project, tag = parse_image_name(args.pop_parameter())
+    project = conf.get("wup:project", scope="global")
+    tag = conf.get("wup:tag", scope="global")
+
     img_name = get_image_name(project, tag)
     filepath = get_export_filepath(project, tag)
 
     print("Exporting image commit for", img_name, "as", filepath)
-    system_run("docker save {} | gzip > {}".format(img_name, filepath))
+    run("docker save {} | gzip > {}".format(img_name, filepath))
 
 
 def do_import(args):
     filepath = args.pop_parameter()
 
     print("Importing image...")
-    system_run(["zcat {}".format(filepath), "docker load -q"])
+    run(["zcat {}".format(filepath), "docker load -q"])
     #project, tag = parse_image_name(rows[0].split("__")[1].strip())
 
 
 def do_new(args):
-    project, tag = parse_image_name(args.pop_parameter())
+    project = conf.get("wup:project", scope="global")
+    tag = conf.get("wup:tag", scope="global")
+
     variables, templates = parse_env(tag, "new")
     img_name = get_image_name(project, tag)
     cont_name = get_container_name(project, tag)
@@ -95,32 +111,45 @@ def do_new(args):
     init = templates["NEW"]
     
     print("Removing previous container...")
-    system_run("docker rm %s 2> /dev/null" % cont_name)
+    run("docker rm %s 2> /dev/null" % cont_name)
 
     print("Creating container from image...")
-    system_run("docker run -i --name {} {} {}".format(cont_name, volumes, img_name), write=init)
+    run("docker run -i --name {} {} {}".format(cont_name, volumes, img_name), write=init)
 
 
 def do_rm(args):
-    projectname, tag = parse_image_name(args.pop_parameter())
+    projectname = conf.get("wup:project", scope="global")
+    tag = conf.get("wup:tag", scope="global")
     cont_name = get_container_name(projectname, tag)
 
-    system_run("docker stop " + cont_name)
-    system_run("docker rm " + cont_name)
+    run("docker stop " + cont_name)
+    run("docker rm " + cont_name)
 
 def do_rmi(args):
-    projectname, tag = parse_image_name(args.pop_parameter())
+    projectname = conf.get("wup:project", scope="global")
+    tag = conf.get("wup:tag", scope="global")
     img_name = get_image_name(projectname, tag)
 
-    system_run("docker rmi " + img_name)
+    run("docker rmi " + img_name)
 
 
 def do_ls(args):
-    system_run("docker ps -a -f \"name=wup__*\"")
+    run("docker ps -a -f \"name=wup__*\"")
 
 
 def do_lsi(args):
-    system_run("docker image ls \"wup__*\"")
+    run("docker image ls \"wup__*\"")
+
+
+def do_set(args):
+    if args.has_parameter():
+        project, tag = parse_image_name(args.pop_parameter())
+    else:
+        project, tag = "", ""
+
+    conf.set("wup:project", project, scope="global")
+    conf.set("wup:tag", tag, scope="global")
+    update_state()
 
 
 def main(argv):
@@ -163,6 +192,9 @@ def main(argv):
 
         elif cmd == "new":
             do_new(args)
+
+        elif cmd == "set":
+            do_set(args)
 
         else:
             abort("Invalid option:", cmd)

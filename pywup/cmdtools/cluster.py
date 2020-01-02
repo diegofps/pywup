@@ -1,5 +1,7 @@
-from .shared import Args, error, abort, WupError, parse_templates, system_run, parse_image_name, get_image_name, parse_env, get_container_name, get_open_cmd
 from multiprocessing import Pool, cpu_count
+
+from pywup.services.general import parse_image_name, parse_env, get_image_name, get_container_name, get_open_cmd
+from pywup.services.system import abort, error, WupError, Args, run
 
 import shlex
 import tqdm
@@ -16,7 +18,7 @@ class CreateTask:
 
 
 def get_container_by_cluster_and_node_number(clustername, node_number):
-    status, rows = system_run("docker ps -a -f \"name=wcl__" + clustername + "__*\"", read=True)
+    status, rows = run("docker ps -a -f \"name=wcl__" + clustername + "__*\"", read=True)
 
     r = re.compile("wcl__" + clustername + "__([a-zA-Z0-9]+)__([a-zA-Z0-9]+)__([0-9]+)\n$")
     
@@ -32,7 +34,7 @@ def get_container_by_cluster_and_node_number(clustername, node_number):
 
 
 def get_containers_in_cluster(clustername, abortOnFail=False):
-    status, rows = system_run("docker ps -a -f \"name=wcl__" + clustername + "__*\" -q", read=True)
+    status, rows = run("docker ps -a -f \"name=wcl__" + clustername + "__*\" -q", read=True)
     
     if abortOnFail and not rows:
         abort("Cluster not found")
@@ -41,8 +43,8 @@ def get_containers_in_cluster(clustername, abortOnFail=False):
 
 
 def parallel_do_new(task):
-    system_run("docker rm %s 2> /dev/null" % task.cont_name)
-    system_run("docker run -i --name {} {} {}".format(task.cont_name, task.volumes, task.base), ["exit\n"])
+    run("docker rm %s 2> /dev/null" % task.cont_name)
+    run("docker run -i --name {} {} {}".format(task.cont_name, task.volumes, task.base), ["exit\n"])
 
 
 def do_new(args):
@@ -83,22 +85,22 @@ def do_rm(args):
     clustername = args.pop_parameter()
     ids = " ".join(get_containers_in_cluster(clustername, abortOnFail=True))
 
-    system_run("docker stop " + ids)
-    system_run("docker rm " + ids)
+    run("docker stop " + ids)
+    run("docker rm " + ids)
 
 
 def do_start(args):
     clustername = args.pop_parameter()
     ids = " ".join(get_containers_in_cluster(clustername, abortOnFail=True))
 
-    system_run("docker start " + ids)
+    run("docker start " + ids)
 
 
 def do_stop(args):
     clustername = args.pop_parameter()
     ids = " ".join(get_containers_in_cluster(clustername, abortOnFail=True))
 
-    system_run("docker stop " + ids)
+    run("docker stop " + ids)
 
 
 def do_open(args):
@@ -110,9 +112,21 @@ def do_open(args):
 
     cmd = get_open_cmd(idd, templates["OPEN"])
 
-    system_run("docker start " + idd)
-    system_run(cmd, suppressInterruption=True)
-    #system_run("docker stop " + idd)
+    run("docker start " + idd)
+    run(cmd, suppressInterruption=True)
+    #run("docker stop " + idd)
+
+
+def do_ls(args):
+    status, rows = run("docker ps -a -f \"name=wcl__*\"", read=True)
+    r = re.compile(r'wcl__([a-zA-Z0-9]+)__([a-zA-Z0-9]+)__([a-zA-Z0-9]+)__([0-9]+)')
+    s = [r.search(row) for row in rows]
+    s = list(set([m.group(1) for m in s if m]))
+    
+    s.sort()
+
+    for name in s:
+        print(name)
 
 
 def main(argv):
@@ -136,9 +150,6 @@ def main(argv):
         elif cmd == "open":
             do_open(args)
         
-        elif cmd == "deploy":
-            do_deploy(args)
-
         elif cmd == "ls":
             do_ls(args)
 

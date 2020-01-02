@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 
 from collections import defaultdict
-from .shared import *
+
+from pywup.services.general import find_column
+from pywup.services.system import read_csv
 
 import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib
 import argparse
 import math
-import pdb
 
 
 def get_arguments(argv):

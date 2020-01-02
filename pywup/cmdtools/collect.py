@@ -3,7 +3,8 @@
 from multiprocessing import Pool, cpu_count
 from subprocess import Popen, PIPE
 from functools import reduce
-from .shared import *
+
+from pywup.services.system import Args
 
 import numpy as np
 import shlex
@@ -12,7 +13,6 @@ import math
 import copy
 import csv
 import sys
-import pdb
 import re
 
 logger = None
@@ -188,7 +188,7 @@ class BasicLog:
         self.dump(4, BasicLog.ERROR, args)
     
     def warn(self, *args):
-        self.dump(3, BasicLog.WARN, args)
+        self.dump(3, BasicLog.WARNING, args)
     
     def print(self, *args):
         self.dump(2, BasicLog.NORMAL, args)
