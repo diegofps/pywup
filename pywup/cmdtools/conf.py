@@ -1,4 +1,4 @@
-from pywup.services.system import error, abort, WupError, Args
+from pywup.services.system import error, abort, WupError, Args, Route
 from pywup.services import conf
 
 import os
@@ -44,13 +44,16 @@ def conf_set(args):
     return conf.set(addr, value, scope=scope)
 
 
-def conf_get(args, scope="any"):
-    scope, addr, value = conf_parse_cmds(args, scope=scope)
+def conf_get(args):
+    scope, addr, value = conf_parse_cmds(args, scope="any")
 
     if value:
         error("Too many parameters")
 
-    return conf.get(addr, scope=scope, pop=False)
+    value = conf.get(addr, scope=scope, pop=False)
+
+    if value:
+        print(value)
 
 
 def conf_pop(args):
@@ -62,29 +65,16 @@ def conf_pop(args):
     return conf.get(addr, scope=scope)
 
 
-def main(argv):
+def conf_init(args):
+    conf.init(os.getcwd())
 
-    args = Args(argv)
-    cmd = args.pop_parameter()
 
-    try:
-        if cmd == "get":
-            value = conf_get(args)
-            if value:
-                print(value)
-        
-        elif cmd == "set":
-            conf_set(args)
-        
-        elif cmd == "pop":
-            print(conf_pop(args))
-        
-        elif cmd == "init":
-            conf.init(os.getcwd())
-        
-        else:
-            abort("Unknown config parameter:", cmd)
+def main(args):
+    r = Route(args)
 
-    except WupError as e:
-        abort(e.message)
-
+    r.map("init", conf_init, "Initialize an empty wup environment in the current directory")
+    r.map("get", conf_get, "Get the value associated with an attribute")
+    r.map("set", conf_set, "Assign a value to one attribute")
+    r.map("pop", conf_pop, "Pop attribute from the settings")
+    
+    r.run()

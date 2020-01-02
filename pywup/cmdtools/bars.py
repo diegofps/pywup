@@ -237,10 +237,9 @@ def do_bars(args):
         plt.show()
 
 
-def main(argv):
+def main(args):
 
     b = SimpleNamespace()
-    args = Args(argv)
     src = None
     
     b.palette = 'colorcet.rainbow_bgyrm_35_85_c69'

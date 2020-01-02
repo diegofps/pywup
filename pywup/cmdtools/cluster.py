@@ -1,7 +1,7 @@
 from multiprocessing import Pool, cpu_count
 
 from pywup.services.general import parse_image_name, parse_env, get_image_name, get_container_name, get_open_cmd
-from pywup.services.system import abort, error, WupError, Args, run
+from pywup.services.system import abort, error, WupError, Args, run, Route
 
 import shlex
 import tqdm
@@ -118,43 +118,40 @@ def do_open(args):
 
 
 def do_ls(args):
-    status, rows = run("docker ps -a -f \"name=wcl__*\"", read=True)
-    r = re.compile(r'wcl__([a-zA-Z0-9]+)__([a-zA-Z0-9]+)__([a-zA-Z0-9]+)__([0-9]+)')
-    s = [r.search(row) for row in rows]
-    s = list(set([m.group(1) for m in s if m]))
+    if args.has_parameter():
+        cluster = args.pop_parameter()
+        run("docker ps -a -f \"name=wcl__{}__*\"".format(cluster))
+
+    else:
+        status, rows = run("docker ps -a -f \"name=wcl__*\"", read=True)
+        r = re.compile(r'wcl__([a-zA-Z0-9]+)__([a-zA-Z0-9]+)__([a-zA-Z0-9]+)__([0-9]+)')
+        s = [r.search(row) for row in rows]
+        res = {}
+
+        for m in s:
+            if m:
+                cluster = m.group(1)
+                project = m.group(2)
+                tag = m.group(3)
+                number = m.group(4)
+
+                if not cluster in res:
+                    res[cluster] = [1, project + ":" + tag]
+                else:
+                    res[cluster][0] += 1
+        
+        for cluster in res:
+            print("{} [{}, {}]".format(cluster, *res[cluster]))
+
+
+def main(args):
+    r = Route(args)
+
+    r.map("new", do_new, "Creates a new simulated cluster using an existing image")
+    r.map("rm", do_rm, "Removes an existing simulated cluster")
+    r.map("start", do_start, "Starts all containers for a given cluster")
+    r.map("stop", do_stop, "Stops all containers for a given cluster")
+    r.map("open", do_open, "Opens one of the cluster machines")
+    r.map("ls", do_ls, "Lists all clusters or containers in cluster")
     
-    s.sort()
-
-    for name in s:
-        print(name)
-
-
-def main(argv):
-    try:
-        args = Args(argv)
-
-        cmd = args.pop_parameter()
-
-        if cmd == "new":
-            do_new(args)
-        
-        elif cmd == "rm":
-            do_rm(args)
-        
-        elif cmd == "start":
-            do_start(args)
-        
-        elif cmd == "stop":
-            do_stop(args)
-        
-        elif cmd == "open":
-            do_open(args)
-        
-        elif cmd == "ls":
-            do_ls(args)
-
-        else:
-            abort("Invalid parameter:", cmd)
-
-    except WupError as e:
-        abort(e.message)
+    r.run()

@@ -12,7 +12,7 @@ import argparse
 import math
 
 
-def get_arguments(argv):
+def get_arguments(args):
 
     parser = argparse.ArgumentParser(description='Heatmap')
 
@@ -60,7 +60,7 @@ def get_arguments(argv):
     parser.add_argument('--verbose', type=bool, default=False,
                         help='print debug info')
 
-    return parser.parse_args(argv)
+    return parser.parse_args(args.all())
 
 
 def map_labels(column):
@@ -75,9 +75,9 @@ def map_labels(column):
 
     return tmp, labels
 
-def main(argv):
+def main(arg):
     # Parse arguments
-    args = get_arguments(argv)
+    args = get_arguments(arg)
 
     # Read the data
     src = read_csv(args.data)

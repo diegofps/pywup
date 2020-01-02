@@ -1,5 +1,5 @@
 from pywup.services.general import parse_env, get_image_name, get_container_name, get_open_cmd, parse_image_name, update_state, get_export_filepath
-from pywup.services.system import error, abort, WupError, run, Args
+from pywup.services.system import error, abort, WupError, run, Args, Route
 from pywup.services import conf
 
 import sys
@@ -152,52 +152,21 @@ def do_set(args):
     update_state()
 
 
-def main(argv):
-    try:
-        args = Args(argv)
-        cmd = args.pop_parameter()
+def main(args):
+    r = Route(args)
 
-        if cmd == "build":
-            do_build(args)
-        
-        elif cmd == "open":
-            do_open(args)
-        
-        elif cmd == "commit":
-            do_commit(args)
-        
-        elif cmd == "launch":
-            do_launch(args)
-
-        elif cmd == "exec":
-            do_exec(args)
-
-        elif cmd == "export":
-            do_export(args)
-
-        elif cmd == "import":
-            do_import(args)
-
-        elif cmd == "rm":
-            do_rm(args)
-
-        elif cmd == "rmi":
-            do_rmi(args)
-
-        elif cmd == "ls":
-            do_ls(args)
-
-        elif cmd == "lsi":
-            do_lsi(args)
-
-        elif cmd == "new":
-            do_new(args)
-
-        elif cmd == "set":
-            do_set(args)
-
-        else:
-            abort("Invalid option:", cmd)
-
-    except WupError as e:
-        abort(e.message)
+    r.map("set", do_set, "Set the current .env file")
+    r.map("build", do_build, "Builds the current environment")
+    r.map("open", do_open, "Opens the environment")
+    r.map("launch", do_launch, "Executes the commands in @LAUNCH@ from inside the environment")
+    r.map("exec", do_exec, "Executes a custom command inside the environment")
+    r.map("ls", do_ls, "Lists all environments")
+    r.map("lsi", do_lsi, "Lists all environment images")
+    r.map("rm", do_rm, "Remove an environment")
+    r.map("rmi", do_rmi, "Remove an environment image")
+    r.map("commit", do_commit, "Create an image from the environment")
+    r.map("export", do_export, "Export the current image to a file in the current folder")
+    r.map("import", do_import, "Imports an image file into a new image")
+    r.map("new", do_new, "Recreate the current environment using the existing image")
+    
+    r.run()

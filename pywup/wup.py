@@ -1,52 +1,26 @@
 #!/usr/bin/env python3
 
-from pywup.services.system import abort, error, WupError
+from pywup.services.system import abort, error, WupError, Route
+from pywup import cmdtools
 
 import sys
 import os
 
 
 def wup():
-    try:
-        args = sys.argv[1:]
-        
-        if len(args) == 0:
-            return print("Missing wup command")
+    r = Route(sys.argv[1:])
 
-        cmd = args[0]
-        
-        if cmd == "heatmap":
-            from pywup.cmdtools.heatmap import main
-        
-        elif cmd == "collect":
-            from pywup.cmdtools.collect import main
-        
-        elif cmd == "bars":
-            from pywup.cmdtools.bars import main
-        
-        elif cmd == "backup":
-            from pywup.cmdtools.backup import main
-        
-        elif cmd == "q":
-            from pywup.cmdtools.q import main
-        
-        elif cmd == "conf":
-            from pywup.cmdtools.conf import main
-
-        elif cmd == "env":
-            from pywup.cmdtools.env import main
-
-        elif cmd == "cluster":
-            from pywup.cmdtools.cluster import main
-
-        else:
-            error("Unknown wup command:", cmd)
-
-        main(args[1:])
+    r.map("collect", lambda x: cmdtools.collect.main(x), "Run an app multiple times, variating its parameters and collecting its output attributes")
+    r.map("heatmap", lambda x: cmdtools.heatmap.main(x), "Plot a heatmap image using the data collected")
+    r.map("bars", lambda x: cmdtools.bars.main(x), "Plot a bars image using the data collected")
+    r.map("backup", lambda x: cmdtools.backup.main(x), "Backup system files into a folder synced to a cloud")
+    r.map("q", lambda x: cmdtools.q.main(x), "Run SQL in CSV files (Requires python-q)")
+    r.map("conf", lambda x: cmdtools.conf.main(x), "Set/Get wup configuration parameters")
+    r.map("env", lambda x: cmdtools.env.main(x), "Manage docker environments for development and cluster deploy (wup style)")
+    r.map("renv", lambda x: cmdtools.renv.main(x), "Manager remote environments basedo on wup environments")
+    r.map("cluster", lambda x: cmdtools.cluster.main(x), "Simulate a cluster using docker containers")
     
-    except WupError as e:
-        abort(e.message)
-
+    r.run(handleError=True)
 
 if __name__ == "__main__":
     wup()

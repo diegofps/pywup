@@ -72,6 +72,6 @@ def parse_file(filepath):
             else:
                 print("error: Inline rule in line. Options are [file, folder], got", cells[0])
 
-def main(argv):
-    filepath = "~/.wupbackup" if len(argv) == 0 else argv[0]
+def main(args):
+    filepath = args.pop_paramter() if args.has_parameter() else "~/.wupbackup"
     parse_file(filepath)

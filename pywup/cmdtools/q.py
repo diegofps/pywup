@@ -1,5 +1,5 @@
 import os
 
-def main(argv):
-    query = argv[0]
+def main(args):
+    query = args.pop_parameter()
     os.system("q -H -d \";\" \"" + query + "\" -O")

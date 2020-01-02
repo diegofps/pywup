@@ -170,3 +170,49 @@ def read_csv(filepath):
         reader = csv.reader(fin, delimiter=';')
         data = [cells for cells in reader]
         return np.array(data, dtype=object)
+
+
+class RouteCmd:
+
+    def __init__(self, cmd, cb, description):
+        self.cmd = cmd
+        self.cb = cb
+        self.description = description
+
+
+class Route:
+
+    def __init__(self, arg):
+        self.args = arg if type(arg) is Args else Args(arg)
+        self.cmds = {}
+
+    def map(self, cmd, cb, description):
+        self.cmds[cmd] = RouteCmd(cmd, cb, description)
+
+    def run(self, handleError=False):
+        try:
+            if not self.args.has_parameter():
+                print("Available commands:\n")
+                return self.help()
+            
+            cmd = self.args.pop_parameter()
+
+            if cmd == "help":
+                return self.help()
+            
+            elif cmd in self.cmds:
+                return self.cmds[cmd].cb(self.args)
+
+            else:
+                error("Invalid command:", cmd)
+
+        except WupError as e:
+            if handleError:
+                abort(e.message)
+            else:
+                raise e
+    
+    def help(self):
+        l = max([len(x) for x in self.cmds])
+        for key in self.cmds:
+            print("  " + key + " " * (l-len(key)) + " - " + self.cmds[key].description)
