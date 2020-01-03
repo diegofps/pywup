@@ -147,9 +147,9 @@ def find_column(headers, header):
 
 
 def update_state():
-    project = conf.get("wup:project", scope="global", failOnMiss=False)
-    tag = conf.get("wup:tag", scope="global", failOnMiss=False)
-    cluster = conf.get("wup:cluster", scope="global", failOnMiss=False)
+    project = conf.get("wup.project", scope="global", failOnMiss=False)
+    tag = conf.get("wup.tag", scope="global", failOnMiss=False)
+    cluster = conf.get("wup.cluster_name", scope="global", failOnMiss=False)
 
     if project and cluster:
         state = project + ":" + tag + "@" + cluster
@@ -162,8 +162,6 @@ def update_state():
     
     else:
         state = "-@-"
-
-    conf.set("wup:state", state, scope="global")
 
     folderpath = os.path.expanduser("~/.wup")
 

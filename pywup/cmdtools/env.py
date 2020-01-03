@@ -147,8 +147,8 @@ def do_set(args):
     else:
         project, tag = "", ""
 
-    conf.set("wup:project", project, scope="global")
-    conf.set("wup:tag", tag, scope="global")
+    conf.set("wup.project", project, scope="global")
+    conf.set("wup.tag", tag, scope="global")
     update_state()
 
 

@@ -72,9 +72,9 @@ def conf_init(args):
 def main(args):
     r = Route(args)
 
-    r.map("init", conf_init, "Initialize an empty wup environment in the current directory")
+    r.map("init", conf_init, "Initialize an empty wup settings in the current directory")
     r.map("get", conf_get, "Get the value associated with an attribute")
     r.map("set", conf_set, "Assign a value to one attribute")
-    r.map("pop", conf_pop, "Pop attribute from the settings")
+    r.map("rm", conf_pop, "Remove attribute from the settings")
     
     r.run()

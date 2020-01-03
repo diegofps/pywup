@@ -1,8 +1,31 @@
 from pywup.services.system import Args, Route, error, abort
+from pywup.services.general import update_state
+from pywup.services import conf
+
+import yaml
+import os
 
 
 def renv_set(args):
-    pass
+    try:
+        if not args.has_parameter():
+            conf.set("wup.cluster_filepath", "", scope="global")
+            conf.set("wup.cluster_name", "", scope="global")
+
+        else:
+            filepath = os.path.abspath(args.pop_parameter())
+            name = os.path.splitext(os.path.basename(filepath))[0]
+
+            with open(filepath, "r") as fin:
+                data = yaml.load(fin)
+            
+            conf.set("wup.cluster_filepath", filepath, scope="global")
+            conf.set("wup.cluster_name", name, scope="global")
+        
+    except (FileNotFoundError, yaml.scanner.ScannerError) as e:
+        error("Missing or invalid file:", filepath)
+
+    update_state()
 
 
 def renv_deploy(args):

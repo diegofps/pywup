@@ -1,2 +1,1 @@
-name="cmdtools"
-from . import env
+name = "cmdtools"

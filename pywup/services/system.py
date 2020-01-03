@@ -130,6 +130,7 @@ class Args:
     def __init__(self, args):
         self.args = args
         self.current = 0
+        self.last = None
     
     def all(self):
         return self.args[self.current:]
@@ -152,12 +153,18 @@ class Args:
         
         v = self.args[self.current]
         self.current += 1
+        self.last = v
         return v
     
-    def pop_parameter(self):
-        if not self.has_parameter():
-            raise RuntimeError("Wrong argument, expecting a command parameter")
-        return self.pop()
+    def pop_parameter(self, cb=None):
+        if self.has_parameter():
+            return self.pop()
+        
+        elif cb:
+            cb(self.last)
+        
+        else:
+            raise RuntimeError("Wrong argument, expecting a parameter")
     
     def pop_cmd(self):
         if not self.has_cmd():

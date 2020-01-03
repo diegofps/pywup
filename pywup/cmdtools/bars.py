@@ -6,7 +6,7 @@ from types import SimpleNamespace
 from pywup.services.system import read_csv, Args
 from pywup.services.general import find_column
 
-import matplotlib.colors as mcolors
+#import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import numpy as np
 import colorcet
@@ -67,9 +67,9 @@ class Line:
 
 def enhance_color(c):
     return c
-    f = lambda x : x * 0.8 + 0.2
-    r, g, b = mcolors.to_rgb(c)
-    return [f(r), f(g), f(b)]
+    #f = lambda x : x * 0.8 + 0.2
+    #r, g, b = mcolors.to_rgb(c)
+    #return [f(r), f(g), f(b)]
     
 
 def do_bars(args):
