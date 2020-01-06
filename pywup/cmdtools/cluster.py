@@ -5,6 +5,7 @@ from pywup.services.system import abort, error, WupError, Args, run, Route
 
 import shlex
 import tqdm
+import yaml
 import sys
 import os
 import re
@@ -43,20 +44,25 @@ def get_containers_in_cluster(clustername, abortOnFail=False):
 
 
 def parallel_do_new(task):
-    run("docker rm %s 2> /dev/null" % task.cont_name)
-    run("docker run -i --name {} {} {}".format(task.cont_name, task.volumes, task.base), ["exit\n"])
+    cmd1 = "docker rm %s 2> /dev/null" % task.cont_name
+    run(cmd1)
+
+    cmd2 = "docker run -i --name {} {} {}".format(task.cont_name, task.volumes, task.base)
+    status, _ = run(cmd2, ["exit\n"])
+
+    return status
 
 
 def do_new(args):
     clustername = args.pop_parameter()
     image = args.pop_parameter()
     qtt = int(args.pop_parameter())
-    outfile = args.pop_parameter() if args.has_parameter() else None
+    outfile = args.pop_parameter()
 
     project, tag = parse_image_name(image)
     variables, templates = parse_env(tag, "cluster create")
 
-    volumes = "-v " + " -v ".join(templates["VOLUMES"]) if "VOLUMES" in templates else ""
+    volumes = "-v " + " -v ".join(templates["VOLUMES"]) if templates["VOLUMES"] else ""
     base = get_image_name(project, tag)
 
     containers = get_containers_in_cluster(clustername)
@@ -72,13 +78,28 @@ def do_new(args):
     # Run in parallel
     print("Creating cluster...")
     jobs = cpu_count()
+    result = []
+
     with Pool(jobs) as p:
-        for _ in tqdm.tqdm(p.imap(parallel_do_new, tasks), total=len(tasks)):
-            pass
+        for status in tqdm.tqdm(p.imap(parallel_do_new, tasks), total=len(tasks)):
+            result.append(status)
     
-    if outfile:
-        with open(outfile, "w") as fout:
-            pass
+    if sum(result) != 0:
+        error("Cluster creation has failed, check the output for details")
+    
+    cluster = {
+        "local_arch": {
+            "m" + str(i) : {
+                "tags": ["fakecluster"],
+                "host": "unknown",
+                "user": "unknown",
+                "procs": 1
+            } for i in range(qtt)
+        }
+    }
+
+    with open(outfile, "w") as fout:
+        yaml.dump(cluster)
 
 
 def do_rm(args):

@@ -52,9 +52,9 @@ def wup(argv):
     r.map("bars", bars, "Plot a bars image using the data collected")
     r.map("backup", backup, "Backup system files into a folder synced to a cloud")
     r.map("q", q, "Run SQL in CSV files (Requires python-q)")
-    r.map("c", conf, "Set/Get wup configuration parameters")
-    r.map("e", env, "Manage docker environments for development and cluster deploy (wup style)")
-    r.map("r", renv, "Manager remote environments basedo on wup environments")
+    r.map("conf", conf, "Set/Get wup configuration parameters")
+    r.map("env", env, "Manage docker environments for development and cluster deploy (wup style)")
+    r.map("remote", renv, "Manager remote environments basedo on wup environments")
     r.map("cluster", cluster, "Simulate a cluster using docker containers")
     
     r.run(handleError=True)

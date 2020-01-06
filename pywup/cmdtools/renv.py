@@ -22,7 +22,7 @@ def renv_set(args):
             conf.set("wup.cluster_filepath", filepath, scope="global")
             conf.set("wup.cluster_name", name, scope="global")
         
-    except (FileNotFoundError, yaml.scanner.ScannerError) as e:
+    except (FileNotFoundError, yaml.scanner.ScannerError):
         error("Missing or invalid file:", filepath)
 
     update_state()

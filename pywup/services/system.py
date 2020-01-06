@@ -194,6 +194,9 @@ class Route:
         self.cmds = {}
 
     def map(self, cmd, cb, description):
+        if cmd in self.cmds:
+            error(cmd + " is already in use")
+        
         self.cmds[cmd] = RouteCmd(cmd, cb, description)
 
     def run(self, handleError=False):

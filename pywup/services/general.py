@@ -1,7 +1,7 @@
 from collections import defaultdict
 from subprocess import Popen, PIPE
 
-from pywup.services.system import quote
+from pywup.services.system import quote, error, abort
 from pywup.services import conf
 
 import numpy as np
@@ -14,8 +14,7 @@ import re
 
 
 def get_open_cmd(container_name, bash_init, tty=True):
-    o = "".join(["source \"$HOME/.bashrc\"\n"] + bash_init)
-    k = quote(o)
+    k = quote("".join(["source \"$HOME/.bashrc\"\n"] + bash_init))
     b = quote("bash --init-file <(echo " + k + ")")
     tty = "-it " if tty else "-i "
     c = "docker exec " + tty + container_name + " bash -c " + b.replace("$", "\\$")
@@ -31,14 +30,14 @@ def parse_env(tag, cmd):
     if not "WORKDIR" in variables:
         variables["WORKDIR"] = "/"
 
-    if not "WUPCMD" in variables:
-        variables["WUPCMD"] = cmd
+    if not "RUN" in variables:
+        variables["RUN"] = cmd
 
-    bash_init = [k + "=\"" + variables[k] + "\"\n" for k in variables]
-    bash_init.append("cd %s\n" % variables["WORKDIR"])
+    workdir = variables["WORKDIR"]
+    bashrc = [k + "=\"" + variables[k] + "\"\n" for k in variables] + ["mkdir -p %s\n" % workdir, "cd %s\n" % workdir]
 
-    for name in ["LAUNCH", "POSTDEPLOY", "BUILD", "OPEN", "EXEC", "NEW"]:
-        templates[name] = bash_init + templates[name]
+    #for name in ["LAUNCH", "POSTDEPLOY", "BUILD", "OPEN", "EXEC", "NEW"]:
+    #    templates[name] = bash_init + templates[name]
     
     volumes = templates["VOLUMES"]
     if volumes:
@@ -58,48 +57,45 @@ def parse_env(tag, cmd):
         
         templates["VOLUMES"] = volumes
 
-    return variables, templates
+    return variables, templates, bashrc
 
 
-def get_export_filepath(project, tag):
-    return "wup__{}__{}.gz".format(project, tag)
+def get_export_filepath(tag):
+    return "wimg__" + tag + ".gz"
 
 
-def get_container_name(projectname, tag, clustername=None, i=None, quantity=None):
+def get_container_name(tag, clustername=None, i=None, quantity=None):
     if clustername:
-        return "wcl__{}__{}__{}__{}".format(clustername, projectname, tag, i)
+        return "wclus__{}__{}__{}".format(clustername, tag, i)
     else:
-        return "wup__{}_{}".format(projectname, tag)
+        return "wcont__" + tag
 
 
-def get_image_name(projectname, tag):
-    return "wup__{}:{}".format(projectname, tag)
+def get_image_name(tag):
+    return "wimg:" + tag
 
 
 def parse_image_name(name):
-    tmp = name.split(":")
-
+    if not os.path.exists(name):
+        filepath = "./" + name + ".env"
+        if not os.path.exists(filepath):
+            filepath = "~/.wup/projects/" + name + "/" + name + ".env"
+            if not os.path.exists(filepath):
+                error("Could not find an env declaration for:", name)
+    else:
+        filepath = name
+        name = os.path.splitext(os.path.basename(name))[0]
+    
     if "__" in name:
         error("Names must not contain two consecutive underscores (__)")
 
-    if len(tmp) == 1:
-        projectname, tag = conf.get("project.name"), tmp[0]
+    if name == "temp":
+        error("You cannot use a container named temp")
     
-    elif len(tmp) == 2:
-        projectname, tag = tmp
-    
-    else:
-        error("Too many \":\" in", name)
-    
-    if tag == "temp":
-        error("You cannot have a container named temp")
-    
-    return projectname, tag
+    return name, filepath
 
 
-
-def parse_templates(tag):
-    filepath = "./{}.env".format(tag)
+def parse_templates(filepath):
     templates = defaultdict(list)
     variables = {}
 
@@ -147,15 +143,14 @@ def find_column(headers, header):
 
 
 def update_state():
-    project = conf.get("wup.project", scope="global", failOnMiss=False)
-    tag = conf.get("wup.tag", scope="global", failOnMiss=False)
+    tag = conf.get("wup.env_name", scope="global", failOnMiss=False)
     cluster = conf.get("wup.cluster_name", scope="global", failOnMiss=False)
 
-    if project and cluster:
-        state = project + ":" + tag + "@" + cluster
+    if tag and cluster:
+        state = tag + "@" + cluster
     
-    elif project:
-        state = project + ":" + tag + "@-"
+    elif tag:
+        state = tag + "@-"
 
     elif cluster:
         state = "-@" + cluster
