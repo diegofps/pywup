@@ -27,12 +27,9 @@ def do_build(args):
     volumes = " -v " + " -v ".join(templates["VOLUMES"]) if templates["VOLUMES"] else None
     expose = " --expose=" + " --expose=".join(variables["EXPOSE"].split(",")) if variables["EXPOSE"] else None
     mapPorts = " -p " + " -p".join(variables["MAP_PORTS"].split(",")) if variables["MAP_PORTS"] else None
-    start = ["echo " + quote("".join(templates["START"])) + " > /start\n"]
-    #start = ["echo hello > /start\n"]
+    create_start = ["echo " + quote("".join(templates["START"] + ["bash\n", "exit\n"])) + " > /start.sh\n", "chmod +x /start.sh\n"]
 
-    #import pdb; pdb.set_trace()
-
-    cmds = bashrc + start + templates["BUILD"]
+    cmds = bashrc + create_start + templates["BUILD"]
     base = variables["BASE"]
 
     rmCmd = "docker rm %s 2> /dev/null" % cont_name
@@ -50,8 +47,8 @@ def do_build(args):
     if mapPorts:
         createCmd += mapPorts
     
-    a = quote(". /start")
-    b = quote("bash --init-file <(echo " + a + ")")
+    #a = quote("nohup /start.sh & bash ; exit")
+    b = quote("bash --init-file <(cat /start.sh 2> /dev/null || echo \"bash ; exit\")")
     createCmd += " " + base + " -c " + b
     
     print(createCmd)
@@ -62,7 +59,7 @@ def do_open(args):
     name = conf.get("wup.env_name", scope="global")
     filepath = conf.get("wup.env_filepath", scope="global")
 
-    variables, templates, bashrc = parse_env(filepath, "open")
+    variables, templates, bashrc = parse_env(filepath)
     cont_name = get_container_name(name)
     cmds = bashrc + templates["OPEN"]
 

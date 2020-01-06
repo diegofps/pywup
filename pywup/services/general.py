@@ -21,7 +21,7 @@ def get_open_cmd(container_name, bash_init, tty=True):
     return c
 
 
-def parse_env(tag, cmd):
+def parse_env(tag):
     variables, templates = parse_templates(tag)
 
     if not "BASE" in variables:
@@ -30,8 +30,14 @@ def parse_env(tag, cmd):
     if not "WORKDIR" in variables:
         variables["WORKDIR"] = "/"
 
-    if not "RUN" in variables:
-        variables["RUN"] = cmd
+    #if not "RUN" in variables:
+    #    variables["RUN"] = cmd
+
+    if not "EXPOSE" in variables:
+        variables["EXPOSE"] = ""
+
+    if not "MAP_PORTS" in variables:
+        variables["MAP_PORTS"] = ""
 
     workdir = variables["WORKDIR"]
     bashrc = [k + "=\"" + variables[k] + "\"\n" for k in variables] + ["mkdir -p %s\n" % workdir, "cd %s\n" % workdir]
