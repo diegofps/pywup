@@ -1,4 +1,4 @@
-from pywup.services.general import parse_env, get_container_name, get_image_name, get_open_cmd, parse_env, parse_image_name, get_export_filepath
+from pywup.services.general import parse_env, get_container_name, get_image_name, get_open_cmd, parse_env, get_export_filepath
 from pywup.services.system import run, error, quote
 from pywup.services import conf
 
@@ -27,16 +27,6 @@ class Env:
             self.cont_name = None
             self.img_name = None
             self.variables, self.templates, self.bashrc = None, None, None
-
-
-    def set(self, filepath):
-        if filepath:
-            name, filepath = parse_image_name(filepath)
-        else:
-            name,filepath = "", ""
-
-        conf.set("wup.env_name", name, scope="global")
-        conf.set("wup.env_filepath", filepath, scope="global")
 
 
     def ip(self):

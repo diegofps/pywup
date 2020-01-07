@@ -81,7 +81,25 @@ def get_image_name(tag):
     return "wimg:" + tag
 
 
-def parse_image_name(name):
+def lookup_cluster(name):
+    if not os.path.exists(name):
+        filepath = "./" + name + ".cluster"
+        if not os.path.exists(filepath):
+            error("Could not find a cluster definition for:", name)
+    else:
+        filepath = name
+        name = os.path.splitext(os.path.basename(name))[0]
+    
+    if "__" in name:
+        error("Cluster names must not contain two consecutive underscores (__)")
+
+    if name == "temp":
+        error("You cannot use a cluster named temp")
+    
+    return name, filepath
+
+
+def lookup_env(name):
     if not os.path.exists(name):
         filepath = "./" + name + ".env"
         if not os.path.exists(filepath):

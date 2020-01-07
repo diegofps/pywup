@@ -1,19 +1,10 @@
-from pywup.services.general import parse_env, get_image_name, get_container_name, get_open_cmd, parse_image_name, update_state, get_export_filepath
+from pywup.services.general import parse_env, get_image_name, get_container_name, get_open_cmd, lookup_env, update_state, get_export_filepath
 from pywup.services.system import error, abort, WupError, run, Args, Route, quote
 from pywup.services.env import Env
 from pywup.services import conf
 
 import sys
 import os
-
-
-def do_set(args):
-    if args.has_parameter():
-        Env().set(args.pop_parameter())
-    else:
-        Env().set("")
-    
-    update_state()
 
 
 def do_build(args):
@@ -71,7 +62,6 @@ def do_lsi(args):
 def main(args):
     r = Route(args)
 
-    r.map("set", do_set, "Set the current env to use")
     r.map("build", do_build, "Builds the current environment")
     r.map("open", do_open, "Opens the environment")
     r.map("launch", do_launch, "Executes the commands in @LAUNCH@ from inside the environment")

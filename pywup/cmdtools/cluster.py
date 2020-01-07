@@ -1,6 +1,6 @@
 from multiprocessing import Pool, cpu_count
 
-from pywup.services.general import parse_image_name, parse_env, get_image_name, get_container_name, get_open_cmd
+from pywup.services.general import lookup_env, parse_env, get_image_name, get_container_name, get_open_cmd
 from pywup.services.system import abort, error, WupError, Args, run, Route
 
 import shlex
@@ -59,7 +59,7 @@ def do_new(args):
     qtt = int(args.pop_parameter())
     outfile = args.pop_parameter()
 
-    project, tag = parse_image_name(image)
+    project, tag = lookup_env(image)
     variables, templates = parse_env(tag, "cluster create")
 
     volumes = "-v " + " -v ".join(templates["VOLUMES"]) if templates["VOLUMES"] else ""
