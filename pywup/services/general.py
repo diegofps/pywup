@@ -70,7 +70,7 @@ def get_export_filepath(tag):
     return "wimg__" + tag + ".gz"
 
 
-def get_container_name(tag, clustername=None, i=None, quantity=None):
+def get_container_name(tag, clustername=None, i=None):
     if clustername:
         return "wclus__{}__{}__{}".format(clustername, tag, i)
     else:
@@ -82,6 +82,9 @@ def get_image_name(tag):
 
 
 def lookup_cluster(name):
+    if name == "-":
+        return "-", ""
+    
     if not os.path.exists(name):
         filepath = "./" + name + ".cluster"
         if not os.path.exists(filepath):
@@ -100,6 +103,9 @@ def lookup_cluster(name):
 
 
 def lookup_env(name):
+    if name == "-":
+        return "-", ""
+
     if not os.path.exists(name):
         filepath = "./" + name + ".env"
         if not os.path.exists(filepath):
@@ -123,8 +129,8 @@ def parse_templates(filepath):
     templates = defaultdict(list)
     variables = {}
 
-    if not os.path.exists(filepath):
-        return variables, templates
+    #if not os.path.exists(filepath):
+    #    return variables, templates
 
     order = []
     rows = []
@@ -167,23 +173,12 @@ def find_column(headers, header):
 
 
 def update_state():
-    tag = conf.get("wup.env_name", scope="global", failOnMiss=False)
-    cluster = conf.get("wup.cluster_name", scope="global", failOnMiss=False)
-
-    if tag and cluster:
-        state = tag + "@" + cluster
-    
-    elif tag:
-        state = tag + "@-"
-
-    elif cluster:
-        state = "-@" + cluster
-    
-    else:
-        state = "-@-"
-
+    env_name = conf.get("wup.env_name", scope="global", failOnMiss=False)
+    cluster_name = conf.get("wup.cluster_name", scope="global", failOnMiss=False)
+    state = (env_name if env_name else "-") + "@" + (cluster_name if cluster_name else "-")
     folderpath = os.path.expanduser("~/.wup")
-
+    
     os.makedirs(folderpath, exist_ok=True)
+
     with open(os.path.join(folderpath, "state"), "w") as fout:
         fout.write(state)

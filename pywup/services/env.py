@@ -1,36 +1,22 @@
 from pywup.services.general import parse_env, get_container_name, get_image_name, get_open_cmd, parse_env, get_export_filepath
 from pywup.services.system import run, error, quote
+from pywup.services.context import Context
 from pywup.services import conf
 
 import os
 
 
-class Env:
+class Env(Context):
 
-    def __init__(self):
-        self.reload()
-    
-
-    def reload(self):
-        try:
-            self.name = conf.get("wup.env_name", scope="global")
-            self.filepath = conf.get("wup.env_filepath", scope="global")
-
-            if self.filepath:
-                self.variables, self.templates, self.bashrc = parse_env(self.filepath)
-                self.cont_name = get_container_name(self.name)
-                self.img_name = get_image_name(self.name)
-            
-        except:
-            self.name = ""
-            self.filepath = ""
-            self.cont_name = None
-            self.img_name = None
-            self.variables, self.templates, self.bashrc = None, None, None
+    def __init__(self, other=None):
+        Context.__init__(self, other)
 
 
-    def ip(self):
-        cmd = "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' " + self.cont_name
+    def ip(self, cont_name=None):
+        if cont_name is None:
+            cont_name = self.cont_name
+        
+        cmd = "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' " + cont_name
         status, rows = run(cmd, read=True)
 
         if status != 0 or not rows:
@@ -39,8 +25,11 @@ class Env:
         return rows[0].strip()
     
 
-    def is_running(self):
-        cmd = "docker inspect -f '{{.State.Running}}' " + self.cont_name
+    def is_running(self, cont_name=None):
+        if cont_name is None:
+            cont_name = self.cont_name
+        
+        cmd = "docker inspect -f '{{.State.Running}}' " + cont_name
         status, rows = run(cmd, read=True)
 
         if status != 0 or not rows:
@@ -59,9 +48,7 @@ class Env:
 
 
     def build(self):
-        self.rm()
-
-        createCmd = "docker run -i --name " + self.cont_name
+        createCmd = "docker run -i --name tmp"
         
         if self.templates["VOLUMES"]:
             createCmd += " -v " + " -v ".join(self.templates["VOLUMES"])
@@ -75,34 +62,55 @@ class Env:
         createCmd += " " + self.variables["BASE"]
         print(createCmd)
 
+        self.rm("tmp")
+
         cmds = self.bashrc + self.templates["BUILD"]
         run(createCmd, write=cmds)
 
+        self.rm()
+        self.rename("tmp", self.cont_name)
 
-    def start(self):
-        if self.is_running():
+
+    def rename(self, oldname, newname):
+        run("docker rename " + oldname + " " + newname)
+
+
+    def start(self, cont_name=None):
+        if cont_name is None:
+            cont_name = self.cont_name
+        
+        if self.is_running(cont_name):
             return
         
-        run("docker start " + self.cont_name)
+        run("docker start " + cont_name)
 
         cmds = self.bashrc + self.templates["START"] + ["sleep 1\n exit\n"]
 
-        self.exec(cmds)
+        self.exec(cmds, cont_name)
 
 
-    def open(self):
-        self.start()
+    def open(self, cont_name=None):
+        if cont_name is None:
+            cont_name = self.cont_name
+        
+        self.start(cont_name)
 
         cmds = self.bashrc + self.templates["OPEN"]
-        run(get_open_cmd(self.cont_name, cmds, True))
+        run(get_open_cmd(cont_name, cmds, True))
 
 
-    def launch(self):
-        self.exec(self.bashrc + self.templates["LAUNCH"])
+    def launch(self, cont_name=None):
+        if cont_name is None:
+            cont_name = self.cont_name
+        
+        self.exec(self.bashrc + self.templates["LAUNCH"], cont_name)
 
 
-    def exec(self, cmds):
-        run(get_open_cmd(self.cont_name, cmds))
+    def exec(self, cmds, cont_name=None):
+        if cont_name is None:
+            cont_name = self.cont_name
+        
+        run(get_open_cmd(cont_name, cmds))
 
 
     def run(self, params):
@@ -115,17 +123,26 @@ class Env:
         run("docker commit " + self.cont_name + " " + self.img_name)
 
 
-    def stop(self):
-        run("docker kill %s 2> /dev/null" % self.cont_name)
+    def stop(self, cont_name=None):
+        if cont_name is None:
+            cont_name = self.cont_name
+        
+        run("docker kill %s 2> /dev/null" % cont_name)
 
 
-    def rm(self):
-        self.stop()
-        run("docker rm %s 2> /dev/null" % self.cont_name)
+    def rm(self, cont_name=None):
+        if cont_name is None:
+            cont_name = self.cont_name
+        
+        self.stop(cont_name)
+        run("docker rm %s 2> /dev/null" % cont_name)
 
 
-    def rmi(self):
-        run("docker rmi " + self.img_name + " 2> /dev/null")
+    def rmi(self, img_name=None):
+        if img_name is None:
+            img_name = self.img_name
+        
+        run("docker rmi " + img_name + " 2> /dev/null")
 
 
     def ls(self):

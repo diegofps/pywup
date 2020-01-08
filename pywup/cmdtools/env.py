@@ -15,6 +15,14 @@ def do_open(args):
     Env().open()
 
 
+def do_start(args):
+    Env().start()
+
+
+def do_stop(args):
+    Env().stop()
+
+
 def do_commit(args):
     Env().commit()
 
@@ -59,11 +67,16 @@ def do_lsi(args):
     Env().lsi()
 
 
+def do_ip(args):
+    print(Env().ip())
+
 def main(args):
     r = Route(args)
 
     r.map("build", do_build, "Builds the current environment")
-    r.map("open", do_open, "Opens the environment")
+    r.map("open", do_open, "Opens the environment, starting it if necessary")
+    r.map("start", do_start, "Starts this container")
+    r.map("stop", do_stop, "Stops this container")
     r.map("launch", do_launch, "Executes the commands in @LAUNCH@ from inside the environment")
     r.map("exec", do_exec, "Executes a custom command inside the environment")
     r.map("run", do_run, "Executes the command define with RUN inside the environment with the parameters given")
@@ -75,5 +88,6 @@ def main(args):
     r.map("export", do_export, "Export the current image to a file in the current folder")
     r.map("import", do_import, "Imports an image file into a new image")
     r.map("new", do_new, "Recreate the current environment using the existing image")
+    r.map("ip", do_ip, "Recreate the current environment using the existing image")
     
     r.run()

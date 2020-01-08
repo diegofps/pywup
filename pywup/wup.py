@@ -2,7 +2,9 @@
 
 from pywup.services.general import lookup_env, lookup_cluster, update_state
 from pywup.services.system import abort, error, WupError, Route
+from pywup.services.context import Context
 from pywup.services import conf
+
 from pywup import cmdtools
 
 import sys
@@ -10,47 +12,31 @@ import os
 
 
 def use(args):
-    name1 = None
-    name2 = None
+    env = None
+    cluster = None
 
     while args.has_next():
         if args.has_cmd():
             cmd = args.pop_cmd()
 
             if cmd == "--env":
-                name1 = args.pop_parameter()
+                env = args.pop_parameter()
             
             elif cmd == "--cluster":
-                name2 = args.pop_parameter()
+                cluster = args.pop_parameter()
             
             else:
                 error("Invalid parameter:", cmd)
             
         else:
-            if name1 is None:
-                name1 = args.pop_parameter()
-            elif name2 is None:
-                name2 = args.pop_parameter()
+            if env is None:
+                env = args.pop_parameter()
+            elif cluster is None:
+                cluster = args.pop_parameter()
             else:
                 error("Too many parameters")
     
-    if name1:
-        name, filepath = lookup_env(name1)
-    else:
-        name, filepath = "", ""
-
-    conf.set("wup.env_name", name, scope="global")
-    conf.set("wup.env_filepath", filepath, scope="global")
-
-    if name2:
-        name, filepath = lookup_cluster(name2)
-    else:
-        name, filepath = "", ""
-
-    conf.set("wup.cluster_name", name, scope="global")
-    conf.set("wup.cluster_filepath", filepath, scope="global")
-
-    update_state()
+    Context().use(env, cluster)
 
 
 def collect(args):

@@ -17,7 +17,7 @@ def renv_set(args):
             name = os.path.splitext(os.path.basename(filepath))[0]
 
             with open(filepath, "r") as fin:
-                data = yaml.load(fin)
+                yaml.load(fin)
             
             conf.set("wup.cluster_filepath", filepath, scope="global")
             conf.set("wup.cluster_name", name, scope="global")
