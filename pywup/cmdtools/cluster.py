@@ -1,6 +1,6 @@
 from multiprocessing import Pool, cpu_count
 
-from pywup.services.general import lookup_env, parse_env, get_image_name, get_container_name, get_open_cmd
+from pywup.services.general import lookup_env, parse_env, get_image_name, get_container_name
 from pywup.services.system import abort, error, WupError, Args, run, Route
 from pywup.services.cluster import Cluster
 

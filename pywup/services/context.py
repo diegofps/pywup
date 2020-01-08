@@ -72,7 +72,7 @@ class Context:
         conf.set("wup.cluster_filepath", cluster_filepath, scope="global")
     
 
-    def require(self, env=True, cluster=True):
+    def require(self, env=False, cluster=False):
         if env and not (self.name and self.name != "-"):
             error("You must set an environment first")
         

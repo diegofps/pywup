@@ -13,13 +13,6 @@ import os
 import re
 
 
-def get_open_cmd(container_name, bash_init, tty=True):
-    k = quote("".join(["source \"$HOME/.bashrc\"\n"] + bash_init))
-    b = quote("bash --init-file <(echo " + k + ")")
-    tty = "-it " if tty else "-i "
-    c = "docker exec " + tty + container_name + " bash -c " + b.replace("$", "\\$")
-    return c
-
 
 def parse_env(tag):
     variables, templates = parse_templates(tag)
