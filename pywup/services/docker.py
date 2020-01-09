@@ -11,23 +11,23 @@ def open_and_init(cont_name, bash_init, tty=True):
     run(c)
 
 
-def build(cont_name, bashrc, templates, variables):
+def build(cont_name, e):
     createCmd = "docker run -i --name tmp"
     
-    if templates["VOLUMES"]:
-        createCmd += " -v " + " -v ".join(templates["VOLUMES"])
+    if e.volumes:
+        createCmd += " -v " + " -v ".join(e.volumes)
     
-    if variables["EXPOSE"]:
-        createCmd += " --expose=" + " --expose=".join(variables["EXPOSE"].split(","))
+    if e.expose:
+        createCmd += " --expose=" + " --expose=".join(e.expose)
 
-    if variables["MAP_PORTS"]:
-        createCmd += " -p " + " -p".join(variables["MAP_PORTS"].split(","))
+    if e.map_ports:
+        createCmd += " -p " + " -p".join(e.map_ports)
 
-    createCmd += " " + variables["BASE"]
+    createCmd += " " + e.base
 
     rm("tmp")
 
-    cmds = bashrc + templates["BUILD"]
+    cmds = e.bashrc + e.build
     run(createCmd, write=cmds)
 
     rm(cont_name)
@@ -108,10 +108,10 @@ def exists_img(img_name):
     return len(rows) >= 2
 
 
-def start(cont_name, bashrc, templates):
+def start(cont_name, e):
     if type(cont_name) is list:
         for n in cont_name:
-            start(n, bashrc, templates)
+            start(n, e)
         return
     
     if is_running(cont_name):
@@ -119,12 +119,12 @@ def start(cont_name, bashrc, templates):
     
     run("docker start " + cont_name)
 
-    cmds = bashrc + templates["START"] + ["sleep 1\n exit\n"]
+    cmds = e.bashrc + e.start + ["sleep 1\n exit\n"]
     exec(cont_name, cmds)
 
 
-def launch(cont_name, bashrc, templates):
-    exec(cont_name, bashrc + templates["LAUNCH"])
+def launch(cont_name, e):
+    exec(cont_name, e.bashrc + e.launch)
 
 
 def exec(cont_name, cmds):
@@ -136,26 +136,26 @@ def commit(cont_name, img_name):
     run("docker commit " + cont_name + " " + img_name)
 
 
-def new(img_name, cont_name, bashrc, templates, variables):
+def new(img_name, cont_name, e):
     if not exists_img(img_name):
         error("Image not found")
 
     createCmd = "docker run -i --name tmp"
 
-    if templates["VOLUMES"]:
-        createCmd += " -v " + " -v ".join(templates["VOLUMES"])
+    if e.volumes:
+        createCmd += " -v " + " -v ".join(e.volumes)
     
-    if variables["EXPOSE"]:
-        createCmd += " --expose=" + " --expose=".join(variables["EXPOSE"].split(","))
+    if e.expose:
+        createCmd += " --expose=" + " --expose=".join(e.expose)
 
-    if variables["MAP_PORTS"]:
-        createCmd += " -p " + " -p".join(variables["MAP_PORTS"].split(","))
+    if e.map_ports:
+        createCmd += " -p " + " -p".join(e.map_ports)
 
     createCmd += " " + img_name
 
     rm("tmp")
 
-    cmds = bashrc + templates["NEW"]
+    cmds = e.bashrc + e.new
     run(createCmd, write=cmds)
 
     rm(cont_name)

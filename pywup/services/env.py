@@ -1,4 +1,4 @@
-from pywup.services.general import parse_env, get_container_name, get_image_name, parse_env, get_export_filepath
+from pywup.services.general import get_container_name, get_image_name, get_export_filepath
 from pywup.services.system import run, error, quote
 from pywup.services.context import Context
 from pywup.services import docker
@@ -30,35 +30,35 @@ class Env(Context):
 
     def build(self):
         self.require(env=True)
-        docker.build(self.cont_name, self.bashrc, self.templates, self.variables)
+        docker.build(self.cont_name, self.e)
 
 
     def start(self):
         self.require(env=True)
-        docker.start(self.cont_name, self.bashrc, self.templates)
+        docker.start(self.cont_name, self.e)
 
 
     def open(self, cont_name=None):
         self.require(env=True)
 
-        cmds = self.bashrc + self.templates["OPEN"]
+        cmds = self.e.bashrc + self.e.open
         
-        docker.start(self.cont_name, self.bashrc, self.templates)
+        docker.start(self.cont_name, self.e)
         docker.open_and_init(self.cont_name, cmds, True)
 
 
     def launch(self):
         self.require(env=True)
-        docker.launch(self.cont_name, self.bashrc, self.templates)
+        docker.launch(self.cont_name, self.e)
 
 
     def exec(self, cmds):
         self.require(env=True)
-        docker.exec(self.cont_name, self.bashrc + cmds)
+        docker.exec(self.cont_name, self.e.bashrc + cmds)
 
 
     def run(self, params):
-        cmd = [self.variables["RUN"] + " " + params]
+        cmd = [self.e.run + " " + params]
         self.exec(cmd)
 
 
@@ -104,4 +104,4 @@ class Env(Context):
 
     def new(self):
         self.require(env=True)
-        docker.new(self.img_name, self.cont_name, self.bashrc, self.templates, self.variables)
+        docker.new(self.img_name, self.cont_name, self.e)

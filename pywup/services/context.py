@@ -1,5 +1,6 @@
-from pywup.services.general import parse_env, get_image_name, get_container_name, lookup_env, lookup_cluster, update_state, get_export_filepath
+from pywup.services.general import get_image_name, get_container_name, lookup_env, lookup_cluster, update_state, get_export_filepath
 from pywup.services.system import error, run, abort
+from pywup.services.envfile import EnvFile
 from pywup.services import conf
 
 import re
@@ -17,27 +18,28 @@ class Context:
             self.filepath = other.filepath
             self.cont_name = other.cont_name
             self.img_name = other.img_name
-            self.variables, self.templates, self.bashrc = other.variables, other.templates, other.bashrc
+            self.e = other.e
 
             self.cluster = other.cluster
             self.cluster_filepath = other.cluster_filepath
+            self.cluster_nodes = []
+            self.cluster_env = None
 
             return
         
         try:
             self.name = conf.get("wup.env_name", scope="global")
             self.filepath = conf.get("wup.env_filepath", scope="global")
-
-            self.variables, self.templates, self.bashrc = parse_env(self.filepath)
             self.cont_name = get_container_name(self.name)
             self.img_name = get_image_name(self.name)
+            self.e = EnvFile(self.filepath)
 
         except:
             self.name = ""
             self.filepath = ""
             self.cont_name = None
             self.img_name = None
-            self.variables, self.templates, self.bashrc = {}, {}, []
+            self.e = EnvFile()
         
         try:
             self.cluster = conf.get("wup.cluster_name", scope="global")
@@ -48,6 +50,8 @@ class Context:
         except:
             self.cluster = ""
             self.cluster_filepath = ""
+            self.cluster_nodes = []
+            self.cluster_env = None
 
 
     def use(self, env, cluster):
