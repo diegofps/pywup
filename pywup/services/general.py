@@ -1,17 +1,7 @@
-from collections import defaultdict
-from subprocess import Popen, PIPE
-
-from pywup.services.system import quote, error, abort
+from pywup.services.system import error
 from pywup.services import conf
 
-import numpy as np
-import shlex
-import yaml
-import csv
-import sys
 import os
-import re
-
 
 
 def get_export_filepath(tag):
@@ -71,10 +61,6 @@ def lookup_env(name):
         error("You cannot use a container named temp")
     
     return name, filepath
-
-
-def find_column(headers, header):
-    return np.where(headers == header)[0].item()
 
 
 def update_state():

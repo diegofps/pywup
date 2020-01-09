@@ -1,9 +1,10 @@
 from pywup.services.general import get_image_name, get_container_name, lookup_env, lookup_cluster, update_state, get_export_filepath
-from pywup.services.system import error, run, abort
+from pywup.services.system import error, run, abort, WupError
 from pywup.services.envfile import EnvFile
 from pywup.services import conf
 
 import re
+import os
 
 
 class Context:
@@ -34,7 +35,7 @@ class Context:
             self.img_name = get_image_name(self.name)
             self.e = EnvFile(self.filepath)
 
-        except:
+        except (AttributeError, FileNotFoundError):
             self.name = ""
             self.filepath = ""
             self.cont_name = None
@@ -47,7 +48,7 @@ class Context:
             self.cluster_nodes = self.get_containers_in_cluster(self.cluster, False) if self.cluster else []
             self.cluster_env = self.cluster_nodes[0].split("__")[-2] if self.cluster_nodes else None
         
-        except:
+        except (AttributeError, FileNotFoundError):
             self.cluster = ""
             self.cluster_filepath = ""
             self.cluster_nodes = []
@@ -67,11 +68,21 @@ class Context:
     
 
     def set_env(self, env_name, env_filepath):
+        if env_filepath.startswith("."):
+            env_filepath = os.path.abspath(env_filepath)
+        elif env_filepath.startswith("~"):
+            env_filepath = os.path.expanduser(env_filepath)
+
         conf.set("wup.env_name", env_name, scope="global")
         conf.set("wup.env_filepath", env_filepath, scope="global")
 
 
     def set_cluster(self, cluster_name, cluster_filepath):
+        if cluster_filepath.startswith("."):
+            cluster_filepath = os.path.abspath(cluster_filepath)
+        elif cluster_filepath.startswith("~"):
+            cluster_filepath = os.path.expanduser(cluster_filepath)
+
         conf.set("wup.cluster_name", cluster_name, scope="global")
         conf.set("wup.cluster_filepath", cluster_filepath, scope="global")
     

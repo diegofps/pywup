@@ -1,4 +1,4 @@
-from pywup.services.general import parse_env, get_image_name, get_container_name, open_and_init, lookup_env, update_state, get_export_filepath
+from pywup.services.general import get_image_name, get_container_name, lookup_env, update_state, get_export_filepath
 from pywup.services.system import error, abort, WupError, run, Args, Route, quote
 from pywup.services.env import Env
 from pywup.services import conf

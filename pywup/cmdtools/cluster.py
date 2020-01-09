@@ -1,6 +1,6 @@
 from multiprocessing import Pool, cpu_count
 
-from pywup.services.general import lookup_env, parse_env, get_image_name, get_container_name
+from pywup.services.general import lookup_env, get_image_name, get_container_name
 from pywup.services.system import abort, error, WupError, Args, run, Route
 from pywup.services.cluster import Cluster
 
@@ -38,11 +38,11 @@ def do_open(args):
 
 
 def do_ls(args):
-    if args.has_parameter():
-        cluster = args.pop_parameter()
-        Cluster().ls(cluster)
-    else:
-        Cluster().ls()
+    Cluster().ls()
+
+
+def do_lsn(args):
+    Cluster().lsn()
 
 
 def do_ip(args):
@@ -57,7 +57,8 @@ def main(args):
     r.map("start", do_start, "Starts all containers for a given cluster")
     r.map("stop", do_stop, "Stops all containers for a given cluster")
     r.map("open", do_open, "Opens one of the cluster machines")
-    r.map("ls", do_ls, "Lists all clusters or containers in a cluster")
+    r.map("ls", do_ls, "Lists all clusters")
+    r.map("lsn", do_lsn, "Lists all nodes in the cluster")
     r.map("ip", do_ip, "Show the IP address of each node in the cluster")
     
     r.run()

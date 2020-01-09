@@ -22,6 +22,6 @@ setuptools.setup(
         'console_scripts': ['wup=pywup.wup:wup'],
     },
     install_requires=[
-        'colorcet',
+        'colorcet', 'tqdm', 'numpy', 'matplotlib'
     ]
 )

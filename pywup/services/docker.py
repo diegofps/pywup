@@ -27,7 +27,7 @@ def build(cont_name, e):
 
     rm("tmp")
 
-    cmds = e.bashrc + e.build
+    cmds = e.bashrc + e.full_build
     run(createCmd, write=cmds)
 
     rm(cont_name)
@@ -78,7 +78,7 @@ def load(filepath):
 
 def ip(cont_name):
     if type(cont_name) is list:
-        return [ip(x) for x in cont_name]
+        return [(x, ip(x)) for x in cont_name]
     
     cmd = "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' " + cont_name
     status, rows = run(cmd, read=True)
@@ -124,7 +124,7 @@ def start(cont_name, e):
 
 
 def launch(cont_name, e):
-    exec(cont_name, e.bashrc + e.launch)
+    exec(cont_name, e.bashrc + e.launch + ["exit\n"])
 
 
 def exec(cont_name, cmds):

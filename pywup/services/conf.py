@@ -137,7 +137,7 @@ def get(addr, scope="any", pop=False, default=None, failOnMiss=True):
                 return value
     
         if failOnMiss:
-            error("Attribute not found:", ".".join(addr))
+            raise AttributeError("Attribute not found: " + ".".join(addr))
     
         return default
     

@@ -1,5 +1,5 @@
 from pywup.services.general import get_container_name, get_image_name, get_export_filepath
-from pywup.services.system import run, error, quote
+from pywup.services.system import run, error, quote, colors
 from pywup.services.context import Context
 from pywup.services import docker
 from pywup.services import conf
@@ -58,7 +58,7 @@ class Env(Context):
 
 
     def run(self, params):
-        cmd = [self.e.run + " " + params]
+        cmd = [self.e.run + " " + params + "\n", "exit\n"]
         self.exec(cmd)
 
 
@@ -74,6 +74,7 @@ class Env(Context):
 
     def rm(self):
         self.require(env=True)
+        print(self.cont_name)
         docker.rm(self.cont_name)
 
 
@@ -93,7 +94,7 @@ class Env(Context):
     def export(self):
         filepath = get_export_filepath(self.name)
 
-        print("Exporting image commit for", self.img_name, "as", filepath)
+        print("Exporting image commit for " + colors.YELLOW + self.img_name + colors.RESET + " as " + colors.YELLOW + filepath + colors.RESET)
         docker.export(self.img_name, filepath)
 
 

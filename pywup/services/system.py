@@ -1,11 +1,20 @@
 from subprocess import Popen, PIPE
 
-import numpy as np
 import shlex
 import sys
-import csv
 import re
 import os
+
+
+class colors:
+    RESET="\033[0m"
+    RED="\033[1;31m"
+    GREEN="\033[1;32m"
+    BLUE="\033[1;34m"
+    YELLOW="\033[1;33m"
+    PURPLE="\033[1;35m"
+    CYAN="\033[1;36m"
+    WHITE="\033[1;37m"
 
 
 def quote(str):
@@ -173,6 +182,9 @@ class Args:
 
 
 def read_csv(filepath):
+    import numpy as np
+    import csv
+
     with open(filepath, "r") as fin:
         reader = csv.reader(fin, delimiter=';')
         data = [cells for cells in reader]
@@ -218,7 +230,7 @@ class Route:
 
         except WupError as e:
             if handleError:
-                abort(e.message)
+                abort(colors.RED + "Error: "+ e.message + colors.RESET)
             else:
                 raise e
     

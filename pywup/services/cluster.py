@@ -1,5 +1,5 @@
-from pywup.services.general import lookup_cluster, lookup_env, get_image_name, get_container_name, parse_env
-from pywup.services.system import error, abort, run
+from pywup.services.general import lookup_cluster, lookup_env, get_image_name, get_container_name, update_state
+from pywup.services.system import error, abort, run, colors
 from multiprocessing import Pool, cpu_count
 from pywup.services.context import Context
 from pywup.services import docker
@@ -28,7 +28,7 @@ class Cluster(Context):
         nodes = [get_container_name(self.name, clustername, i) for i in range(qtt)]
 
         for cont_name in nodes:
-            docker.new(self.img_name, cont_name, self.bashrc, self.templates, self.variables)
+            docker.new(self.img_name, cont_name, self.e)
         
         data = {
             "local_arch": {
@@ -46,16 +46,22 @@ class Cluster(Context):
             yaml.dump(data, fout)
         
         self.set_cluster(clustername, outfile)
+        print("Cluster file written to " + colors.YELLOW + outfile + colors.RESET)
+
+        update_state()
     
 
     def rm(self):
         self.require(cluster=True)
         docker.rm(self.cluster_nodes)
+
+        self.set_cluster("-", "")
+        update_state()
     
 
     def start(self):
         self.require(env=True, cluster=True)
-        docker.start(self.cluster_nodes, self.bashrc, self.templates)
+        docker.start(self.cluster_nodes, self.e)
 
 
     def stop(self):
@@ -71,11 +77,13 @@ class Cluster(Context):
     def open(self, node_number):
         self.require(env=True, cluster=True)
         cont_name = get_container_name(self.name, self.cluster, node_number)
-        docker.open_and_init(cont_name, self.bashrc)
+        docker.open_and_init(cont_name, self.e.bashrc)
     
 
-    def ls(self, cluster=None):
-        if cluster is None:
-            docker.ls_clusters()
-        else:
-            docker.ls_cluster_nodes(cluster)
+    def ls(self):
+        docker.ls_clusters()
+
+
+    def lsn(self):
+        self.require(cluster=True)
+        docker.ls_cluster_nodes(self.cluster)
