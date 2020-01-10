@@ -15,27 +15,27 @@ class Env(Context):
 
     def ip(self):
         self.require(env=True)
-        return docker.ip(self.cont_name)
+        return docker.get_container_ip(self.cont_name)
     
 
     def is_running(self):
         self.require(env=True)
-        return docker.is_running(self.cont_name)
+        return docker.is_container_running(self.cont_name)
 
 
     def has_img(self, img_name=None):
         self.require(env=True)
-        return docker.exists_img(self.img_name)
+        return docker.exists_image(self.img_name)
 
 
     def build(self):
         self.require(env=True)
-        docker.build(self.cont_name, self.e)
+        docker.build_with_commits(self.cont_name, self.img_name, self.e)
 
 
     def start(self):
         self.require(env=True)
-        docker.start(self.cont_name, self.e)
+        docker.start_container(self.cont_name, self.e)
 
 
     def open(self, cont_name=None):
@@ -43,7 +43,7 @@ class Env(Context):
 
         cmds = self.e.bashrc + self.e.open
         
-        docker.start(self.cont_name, self.e)
+        docker.start_container(self.cont_name, self.e)
         docker.open_and_init(self.cont_name, cmds, True)
 
 
@@ -75,32 +75,32 @@ class Env(Context):
     def rm(self):
         self.require(env=True)
         print(self.cont_name)
-        docker.rm(self.cont_name)
+        docker.rm_container(self.cont_name)
 
 
     def rmi(self):
         self.require(env=True)
-        docker.rmi(self.img_name)
+        docker.rm_image(self.img_name)
 
 
     def ls(self):
-        docker.ls()
+        docker.ls_containers()
 
 
     def lsi(self):
-        docker.lsi()
+        docker.ls_images()
 
 
     def export(self):
         filepath = get_export_filepath(self.name)
 
         print("Exporting image commit for " + colors.YELLOW + self.img_name + colors.RESET + " as " + colors.YELLOW + filepath + colors.RESET)
-        docker.export(self.img_name, filepath)
+        docker.export_image(self.img_name, filepath)
 
 
     def load(self, filepath):
         print("Importing image...")
-        docker.load(filepath)
+        docker.load_image(filepath)
 
 
     def new(self):

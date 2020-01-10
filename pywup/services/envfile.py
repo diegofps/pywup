@@ -1,9 +1,37 @@
 from pywup.services.system import error, colors
 from collections import defaultdict
 
+from hashlib import md5
+
 import copy
 import os
 import re
+
+
+def crop_edge_lines(lines):
+    size = len(lines)
+
+    i = 0
+    while i < size and lines[i].strip() == "":
+        i += 1
+    
+    first = i
+
+    i = size - 1
+    while i >= 0 and lines[i].strip() == "":
+        i -= 1
+    
+    return lines[first:i+1]
+
+
+class Commit:
+
+    def __init__(self, env, name, lines, hashstr):
+        self.env = env
+        self.name = name
+        self.lines = lines
+        self.hashstr = md5(hashstr.encode('utf-8')).hexdigest()
+        self.commit_name = "wcommit:{}__{}__{}".format(env, name, self.hashstr)
 
 
 class EnvNode:
@@ -43,10 +71,10 @@ class EnvNode:
 
 class EnvFile:
 
-    def __init__(self, filepath=None):
+    def __init__(self, env=None, filepath=None):
         self.init_default()
-        if filepath is not None:
-            self.init_from_envfile(filepath)
+        if filepath is not None and env is not None:
+            self.init_from_envfile(env, filepath)
     
 
     def init_default(self):
@@ -60,14 +88,17 @@ class EnvFile:
 
         self.base = "ubuntu:bionic"
         self.workdir = "/"
+        self.run = "ls"
         self.map_ports = []
         self.volumes = []
+        self.build_volumes = []
+        self.deploy_volumes = []
         self.expose = []
-        self.run = "ls"
+        self.commits = []
 
 
-    def init_from_envfile(self, filepath):
-        root = self.read_envfile(filepath)
+    def init_from_envfile(self, env, env_filepath):
+        root = self.read_envfile(env_filepath)
 
         # VARIABLES
         variables = {}
@@ -100,27 +131,17 @@ class EnvFile:
             self.run = variables["RUN"]
         
         # BASHRC
-        self.bashrc = [k + "=\"" + variables[k] + "\"\n" for k in variables] 
+        self.bashrc = [k + "=\"" + variables[k] + "\"\n" for k in variables]
         self.bashrc += ["mkdir -p %s\n" % self.workdir, "cd %s\n" % self.workdir]
 
         # TEMPLATES
-        if "VOLUMES" in root:
-            self.volumes = root["VOLUMES"]
+        if "BUILD_VOLUMES" in root:
+            self.build_volumes = root["BUILD_VOLUMES"]
+            self.volumes += root["BUILD_VOLUMES"]
         
-        if self.volumes:
-            self.volumes = [j.strip() for j in self.volumes]
-            self.volumes = [j for j in self.volumes if j]
-            self.volumes = [os.path.expanduser(j) for j in self.volumes]
-            self.volumes = [os.path.abspath(j) for j in self.volumes]
-
-            for v in self.volumes:
-                src = v.split(":")[0]
-
-                if not os.path.exists(src):
-                    error("Missing source directory in host:", src)
-                
-                if not os.path.isdir(src):
-                    error("Source volume in host is not a directory:", src)
+        if "DEPLOY_VOLUMES" in root:
+            self.deploy_volumes = root["DEPLOY_VOLUMES"]
+            self.volumes += root["DEPLOY_VOLUMES"]
         
         if "LAUNCH" in root:
             self.launch = root["LAUNCH"].lines
@@ -135,7 +156,28 @@ class EnvFile:
             self.open = root["OPEN"].lines
         
         if "BUILD" in root:
-            self.full_build = root["BUILD"].lines_recursive()
+            build = root["BUILD"]
+
+            self.full_build = build.lines_recursive()
+
+            hashstr = "".join(self.bashrc)
+            lines = crop_edge_lines(build.lines)
+
+            if lines:
+                hashstr += "ROOT" + "".join(lines)
+                commit = Commit(env, "ROOT", lines, hashstr)
+                self.commits.append(commit)
+            
+            for node in build.children:
+                if node.name == "ROOT":
+                    error("A commit named ROOT is not allowed")
+                
+                lines = crop_edge_lines(node.lines)
+
+                if lines:
+                    hashstr += node.name + "".join(lines)
+                    commit = Commit(env, node.name, lines, hashstr)
+                    self.commits.append(commit)
 
 
     def read_envfile(self, filepath):
@@ -181,7 +223,5 @@ class EnvFile:
                 while node_queue[-1].lvl >= node.lvl:
                     node_queue.pop()
         
-        #import pdb; pdb.set_trace()
-
         return root
 

@@ -1,5 +1,5 @@
 from pywup.services.general import get_image_name, get_container_name, lookup_env, lookup_cluster, update_state, get_export_filepath
-from pywup.services.system import error, run, abort, WupError
+from pywup.services.system import error, run, abort, WupError, expand_path
 from pywup.services.envfile import EnvFile
 from pywup.services import conf
 
@@ -33,7 +33,7 @@ class Context:
             self.filepath = conf.get("wup.env_filepath", scope="global")
             self.cont_name = get_container_name(self.name)
             self.img_name = get_image_name(self.name)
-            self.e = EnvFile(self.filepath)
+            self.e = EnvFile(self.name, self.filepath)
 
         except (AttributeError, FileNotFoundError):
             self.name = ""
@@ -68,23 +68,13 @@ class Context:
     
 
     def set_env(self, env_name, env_filepath):
-        if env_filepath.startswith("."):
-            env_filepath = os.path.abspath(env_filepath)
-        elif env_filepath.startswith("~"):
-            env_filepath = os.path.expanduser(env_filepath)
-
         conf.set("wup.env_name", env_name, scope="global")
-        conf.set("wup.env_filepath", env_filepath, scope="global")
+        conf.set("wup.env_filepath", expand_path(env_filepath), scope="global")
 
 
     def set_cluster(self, cluster_name, cluster_filepath):
-        if cluster_filepath.startswith("."):
-            cluster_filepath = os.path.abspath(cluster_filepath)
-        elif cluster_filepath.startswith("~"):
-            cluster_filepath = os.path.expanduser(cluster_filepath)
-
         conf.set("wup.cluster_name", cluster_name, scope="global")
-        conf.set("wup.cluster_filepath", cluster_filepath, scope="global")
+        conf.set("wup.cluster_filepath", expand_path(cluster_filepath), scope="global")
     
 
     def require(self, env=False, cluster=False):
@@ -97,7 +87,6 @@ class Context:
         if env and cluster and self.name != self.cluster_env:
             error("This cluster was created from a different environment, please set the proper one")
 
-        
 
     def get_containers_in_cluster(self, clustername, abortOnFail=False):
         _, rows = run("docker ps -a", read=True)

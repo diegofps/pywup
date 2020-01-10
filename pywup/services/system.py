@@ -17,6 +17,22 @@ class colors:
     WHITE="\033[1;37m"
 
 
+def expand_path(filepath):
+    if not filepath:
+        return filepath
+    
+    if filepath.startswith("/"):
+        return filepath
+    
+    if filepath.startswith("./"):
+        return os.path.abspath(filepath)
+    
+    if filepath.startswith("~"):
+        return os.path.expanduser(filepath)
+    
+    return os.path.abspath(os.path.join(".", filepath))
+
+
 def quote(str):
     return '"' + re.sub(r'([\'\"\\])', r'\\\1', str) + '"'
 

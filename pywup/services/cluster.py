@@ -19,11 +19,11 @@ class Cluster(Context):
     def new(self, clustername, qtt, outfolder):
         self.require(env=True)
 
-        if not docker.exists_img(self.img_name):
+        if not docker.exists_image(self.img_name):
             error("You must COMMIT the image first")
 
         if self.cluster_nodes:
-            error("A cluster with this name already exists, remove it first")
+            error("A cluster with this name already exist, remove it first")
 
         nodes = [get_container_name(self.name, clustername, i) for i in range(qtt)]
 
@@ -53,7 +53,7 @@ class Cluster(Context):
 
     def rm(self):
         self.require(cluster=True)
-        docker.rm(self.cluster_nodes)
+        docker.rm_container(self.cluster_nodes)
 
         self.set_cluster("-", "")
         update_state()
@@ -61,7 +61,7 @@ class Cluster(Context):
 
     def start(self):
         self.require(env=True, cluster=True)
-        docker.start(self.cluster_nodes, self.e)
+        docker.start_container(self.cluster_nodes, self.e)
 
 
     def stop(self):
@@ -71,7 +71,7 @@ class Cluster(Context):
 
     def ip(self):
         self.require(cluster=True)
-        return docker.ip(self.cluster_nodes)
+        return docker.get_container_ip(self.cluster_nodes)
 
 
     def open(self, node_number):
