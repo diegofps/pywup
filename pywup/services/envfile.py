@@ -32,7 +32,7 @@ class Commit:
         self.name = name
         self.lines = lines
         self.hashstr = md5(hashstr.encode('utf-8')).hexdigest()
-        self.commit_name = "wcommit:{}__{}__{}__{}".format(env, idd, name, self.hashstr)
+        self.commit_name = "{}__{}__{}__{}".format(env, idd, name, self.hashstr)
 
 
 class EnvNode:
@@ -160,13 +160,14 @@ class EnvFile:
             build = root["BUILD"]
 
             self.full_build = build.lines_recursive()
+            self.commit_prefix = "wcommit:" + env
 
             hashstr = "".join(self.bashrc)
             lines = crop_edge_lines(build.lines)
 
             if lines:
                 hashstr += "ROOT" + "".join(lines)
-                commit = Commit(0, env, "ROOT", lines, hashstr)
+                commit = Commit(0, self.commit_prefix, "ROOT", lines, hashstr)
                 self.commits.append(commit)
             
             for node in build.children:
@@ -177,7 +178,7 @@ class EnvFile:
 
                 if lines:
                     hashstr += node.name + "".join(lines)
-                    commit = Commit(len(self.commits), env, node.name, lines, hashstr)
+                    commit = Commit(len(self.commits), self.commit_prefix, node.name, lines, hashstr)
                     self.commits.append(commit)
 
 

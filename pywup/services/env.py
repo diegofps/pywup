@@ -72,23 +72,28 @@ class Env(Context):
         docker.stop(self.cont_name)
 
 
-    def rm(self):
+    def rm_container(self):
         self.require(env=True)
         print(self.cont_name)
         docker.rm_container(self.cont_name)
 
 
-    def rmi(self):
+    def rm_image(self):
         self.require(env=True)
         docker.rm_image(self.img_name)
 
 
-    def ls(self):
+    def ls_containers(self):
         docker.ls_containers()
 
 
-    def lsi(self):
+    def ls_images(self):
         docker.ls_images()
+
+
+    def ls_commits(self):
+        for x in docker.ls_commits():
+            print(*x)
 
 
     def export(self):

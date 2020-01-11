@@ -33,6 +33,10 @@ def expand_path(filepath):
     return os.path.abspath(os.path.join(".", filepath))
 
 
+def yprint(*args):
+    print(colors.YELLOW + " ".join(args) + colors.RESET)
+
+
 def quote(str):
     return '"' + re.sub(r'([\'\"\\])', r'\\\1', str) + '"'
 

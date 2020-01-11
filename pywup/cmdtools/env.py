@@ -52,23 +52,28 @@ def do_new(args):
 
 
 def do_rm(args):
-    Env().rm()
+    Env().rm_container()
 
 
 def do_rmi(args):
-    Env().rmi()
+    Env().rm_image()
 
 
 def do_ls(args):
-    Env().ls()
+    Env().ls_containers()
 
 
 def do_lsi(args):
-    Env().lsi()
+    Env().ls_images()
+
+
+def do_lsc(args):
+    Env().ls_commits()
 
 
 def do_ip(args):
     print(Env().ip())
+
 
 def main(args):
     r = Route(args)
@@ -82,6 +87,7 @@ def main(args):
     r.map("run", do_run, "Executes the command define with RUN inside the environment with the parameters given")
     r.map("ls", do_ls, "Lists all environments")
     r.map("lsi", do_lsi, "Lists all environment images")
+    r.map("lsc", do_lsc, "Lists all commit images")
     r.map("rm", do_rm, "Remove an environment")
     r.map("rmi", do_rmi, "Remove an environment image")
     r.map("commit", do_commit, "Create an image from the environment")

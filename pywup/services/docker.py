@@ -1,4 +1,4 @@
-from pywup.services.system import run, quote, error, expand_path, colors
+from pywup.services.system import run, quote, error, expand_path, yprint
 
 import re
 import os
@@ -51,12 +51,12 @@ def build_single(cont_name, e):
     rename_container("tmp", cont_name)
 
 
-def build_with_commits(cont_name, img_prefix, e):
+def build_with_commits(cont_name, img_name, e):
+
 
     # Retrieve existing commits
     commits = ls_commits()
-    commits_map = {x[0] + ":" + x[1] for x in commits}
-
+    commits_map = {x[0] for x in commits}
 
     # Prefix for creating the container
     createCmd = "docker run -i --name tmp"
@@ -72,21 +72,24 @@ def build_with_commits(cont_name, img_prefix, e):
 
     # Here
     restore_point = None
+
     for i in range(len(e.commits)-1,-1,-1):
-        if e.commits[i].commit_name in commits_map:
+        name = e.commits[i].commit_name
+
+        if name in commits_map:
             restore_point = i
             break
-    
+
     if restore_point is None:
-        print(colors.YELLOW + "Creating from the base image " + e.base + colors.RESET)
+        yprint("Creating from the base image", e.base)
         createCmd += " " + e.base
         restore_point = 0
 
     else:
         for i in range(restore_point):
-            print(colors.YELLOW + "Skipping cached commit: " + e.commits[i].name + colors.RESET)
+            yprint("Skipping migration", e.commits[i].name)
 
-        print(colors.YELLOW + "Recovering cached commit " + e.commits[restore_point].name + " ..." + colors.RESET)
+        yprint("Recovering snapshot", e.commits[restore_point].name, "...")
         createCmd += " " + e.commits[restore_point].commit_name
         restore_point += 1
 
@@ -96,14 +99,30 @@ def build_with_commits(cont_name, img_prefix, e):
 
     for i in range(restore_point, len(e.commits)):
         c = e.commits[i]
-        print(colors.YELLOW + "Applying migration " + c.name + " ..." + colors.RESET)
+        yprint("Applying migration", c.name, "...")
         exec("tmp", c.lines + ["exit\n"])
 
-        print("Saving result...")
+        print("Saving snapshot...")
         commit("tmp", c.commit_name)
     
+    yprint("Creating final image:", img_name, "...")
     rm_container(cont_name)
+    commit("tmp", img_name)
     rename_container("tmp", cont_name)
+
+    yprint("Cleaning old snapshots ...")
+    current_hashs = {x.hashstr for x in e.commits}
+    olds = []
+
+    for x in commits:
+        commit_img = x[0]
+        xhash = x[4]
+
+        if commit_img.startswith(e.commit_prefix):
+            if not xhash in current_hashs:
+                olds.append(commit_img)
+
+    rm_image(olds)
 
 
 def rename_container(oldname, newname):
@@ -146,7 +165,13 @@ def ls_commits():
     if status != 0:
         error("Command error")
 
-    return [row.split()[:3] for row in rows]
+    result = []
+    for row in rows[1:]:
+        cells1 = row.split()
+        cells2 = cells1[1].split("__")
+        result.append([cells1[0] + ":" + cells1[1]] + cells2)
+    
+    return result
 
 
 def export_image(img_name, filepath):
