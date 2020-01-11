@@ -53,7 +53,6 @@ def build_single(cont_name, e):
 
 def build_with_commits(cont_name, img_prefix, e):
 
-
     # Retrieve existing commits
     commits = ls_commits()
     commits_map = {x[0] + ":" + x[1] for x in commits}
@@ -71,46 +70,38 @@ def build_with_commits(cont_name, img_prefix, e):
     if e.map_ports:
         createCmd += " -p " + " -p".join(e.map_ports)
 
-
-    # Find a commit we can reuse, or use the base image
-    base_commit = None
-
-    for i, c in enumerate(e.commits):
-        if c.commit_name in commits_map:
-            print(colors.YELLOW + "Skipping cached commit " + c.name + colors.RESET)
-            
-        elif i == 0:
-            createCmd += " " + e.base
-            print(colors.YELLOW + "Creating from the base image " + e.base + colors.RESET)
-
-        else:
-            createCmd += " " + e.commits[i-1].commit_name
-            print(colors.YELLOW + "Recovering from last commit " + c.name + colors.RESET)
+    # Here
+    restore_point = None
+    for i in range(len(e.commits)-1,-1,-1):
+        if e.commits[i].commit_name in commits_map:
+            restore_point = i
             break
+    
+    if restore_point is None:
+        print(colors.YELLOW + "Creating from the base image " + e.base + colors.RESET)
+        createCmd += " " + e.base
+        restore_point = 0
 
-    # Create the base image and start the container
+    else:
+        for i in range(restore_point):
+            print(colors.YELLOW + "Skipping cached commit: " + e.commits[i].name + colors.RESET)
+
+        print(colors.YELLOW + "Recovering cached commit " + e.commits[restore_point].name + " ..." + colors.RESET)
+        createCmd += " " + e.commits[restore_point].commit_name
+        restore_point += 1
+
     rm_container("tmp")
     run(createCmd, write=e.bashrc)
     start_container("tmp", e)
 
-    # See where we stopped and continue the build if necessary
-    first = 0
-
-    if base_commit is not None:
-        for i, c in enumerate(e.commits):
-            if c is base_commit:
-                first = i + 1
-                break
-            else:
-                print(colors.YELLOW + "Skipping cached commit " + c.name + colors.RESET)
-    
-    
-    for i in range(first, len(e.commits)):
+    for i in range(restore_point, len(e.commits)):
         c = e.commits[i]
-        print(colors.YELLOW + "Applying commit " + c.name + colors.RESET)
+        print(colors.YELLOW + "Applying migration " + c.name + " ..." + colors.RESET)
         exec("tmp", c.lines + ["exit\n"])
-        commit("tmp", c.commit_name)
 
+        print("Saving result...")
+        commit("tmp", c.commit_name)
+    
     rm_container(cont_name)
     rename_container("tmp", cont_name)
 
@@ -124,7 +115,7 @@ def rm_container(cont_name):
         cont_name = " ".join(cont_name)
     
     stop(cont_name)
-    run("docker rm " + cont_name + " 2> /dev/null")
+    run("docker rm " + cont_name + " 1> /dev/null 2> /dev/null")
 
 
 def rm_image(img_name):
@@ -138,7 +129,7 @@ def stop(cont_name):
     if type(cont_name) is list:
         cont_name = " ".join(cont_name)
     
-    run("docker kill " + cont_name + " 2> /dev/null")
+    run("docker kill " + cont_name + " 1> /dev/null 2> /dev/null")
 
 
 def ls_containers():
@@ -207,7 +198,7 @@ def start_container(cont_name, e):
     if is_container_running(cont_name):
         return
     
-    run("docker start " + cont_name)
+    run("docker start " + cont_name + " > /dev/null")
 
     cmds = e.bashrc + e.start + ["sleep 1\n exit\n"]
     exec(cont_name, cmds)
