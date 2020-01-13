@@ -8,7 +8,18 @@ import os
 
 
 def do_build(args):
-    Env().build()
+    fromCommit = None
+
+    while args.has_cmd():
+        cmd = args.pop_cmd()
+
+        if cmd == "--from":
+            fromCommit = args.pop_parameter()
+        
+        else:
+            error("Invalid parameter:", cmd)
+    
+    Env().build(fromCommit=fromCommit)
 
 
 def do_open(args):

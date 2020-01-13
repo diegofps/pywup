@@ -9,7 +9,7 @@ def open_and_init(cont_name, bash_init, tty=True):
     b = quote("bash --init-file <(echo " + k + ")")
     tty = "-it " if tty else "-i "
     c = "docker exec " + tty + cont_name + " bash -c " + b.replace("$", "\\$")
-    run(c)
+    return run(c)
 
 
 def parse_volumes(volumes):
@@ -51,8 +51,7 @@ def build_single(cont_name, e):
     rename_container("tmp", cont_name)
 
 
-def build_with_commits(cont_name, img_name, e):
-
+def build_with_commits(cont_name, img_name, e, fromCommit=None):
 
     # Retrieve existing commits
     commits = ls_commits()
@@ -73,15 +72,37 @@ def build_with_commits(cont_name, img_name, e):
     # Here
     restore_point = None
 
-    for i in range(len(e.commits)-1,-1,-1):
-        name = e.commits[i].commit_name
+    if fromCommit is None:
+        for i in range(len(e.commits)-1,-1,-1):
+            name = e.commits[i].commit_name
 
-        if name in commits_map:
-            restore_point = i
-            break
+            if name in commits_map:
+                restore_point = i
+                break
+    
+    else:
+        found = False
+
+        for i in range(len(e.commits)):
+            name = e.commits[i].name
+
+            if name == fromCommit:
+                if i != 0:
+                    previous = e.commits[i-1].commit_name
+
+                    if not previous in commits_map:
+                        error("Can't restore from", fromCommit, ", previous snapshot is not available")
+                    
+                    restore_point = i - 1
+                
+                found = True
+                break
+
+        if not found:
+            error("Invalid migration", fromCommit)
 
     if restore_point is None:
-        yprint("Creating from the base image", e.base)
+        yprint("Starting from base image", e.base)
         createCmd += " " + e.base
         restore_point = 0
 
@@ -99,8 +120,12 @@ def build_with_commits(cont_name, img_name, e):
 
     for i in range(restore_point, len(e.commits)):
         c = e.commits[i]
+
         yprint("Applying migration", c.name, "...")
-        exec("tmp", c.lines + ["exit\n"])
+        status, _ = exec("tmp", c.lines + ["exit\n"])
+
+        if status != 0:
+            error("Migration is not working, please fix it")
 
         print("Saving snapshot...")
         commit("tmp", c.commit_name)
@@ -116,7 +141,7 @@ def build_with_commits(cont_name, img_name, e):
 
     for x in commits:
         commit_img = x[0]
-        xhash = x[4]
+        xhash = x[-1]
 
         if commit_img.startswith(e.commit_prefix):
             if not xhash in current_hashs:
@@ -234,7 +259,7 @@ def launch(cont_name, e):
 
 
 def exec(cont_name, cmds):
-    open_and_init(cont_name, cmds)
+    return open_and_init(cont_name, cmds)
 
 
 def commit(cont_name, img_name):
