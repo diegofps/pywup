@@ -24,7 +24,7 @@ def expand_path(filepath):
     if filepath.startswith("/"):
         return filepath
     
-    if filepath.startswith("./"):
+    if filepath.startswith("./") or filepath.startswith("../"):
         return os.path.abspath(filepath)
     
     if filepath.startswith("~"):
