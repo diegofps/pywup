@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import csv
-import pdb
 import os
 
 def sync_folder(fin, fout, to_left, to_right):
@@ -85,9 +84,9 @@ def parse_file(filepath, to_left, to_right):
             else:
                 print("error: Inline rule in line. Options are [file, folder], got", cells[0])
 
-def main(argv):
-    cmd = argv[0]
-    filepath = argv[1]
+def main(args):
+    cmd = args.pop_parameter()
+    filepath = args.pop_parameter() if args.has_parameter() else "~/.wupbackup"
     
     if cmd == "create":
         parse_file(filepath, False, True)
@@ -100,4 +99,3 @@ def main(argv):
     
     else:
         print("Unknown command: ", cmd);
-    

@@ -2,14 +2,15 @@
 
 from collections import defaultdict
 from types import SimpleNamespace
-from .shared import *
 
-import matplotlib.colors as mcolors
+from pywup.services.system import read_csv, Args
+from pywup.services.general import find_column
+
+#import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import numpy as np
 import colorcet
 import math
-import pdb
 import sys
 
 
@@ -66,9 +67,9 @@ class Line:
 
 def enhance_color(c):
     return c
-    f = lambda x : x * 0.8 + 0.2
-    r, g, b = mcolors.to_rgb(c)
-    return [f(r), f(g), f(b)]
+    #f = lambda x : x * 0.8 + 0.2
+    #r, g, b = mcolors.to_rgb(c)
+    #return [f(r), f(g), f(b)]
     
 
 def do_bars(args):
@@ -236,10 +237,9 @@ def do_bars(args):
         plt.show()
 
 
-def main(argv):
+def main(args):
 
     b = SimpleNamespace()
-    args = Args(argv)
     src = None
     
     b.palette = 'colorcet.rainbow_bgyrm_35_85_c69'

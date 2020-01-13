@@ -3,7 +3,8 @@
 from multiprocessing import Pool, cpu_count
 from subprocess import Popen, PIPE
 from functools import reduce
-from .shared import *
+
+from pywup.services.system import Args
 
 import numpy as np
 import shlex
@@ -12,7 +13,6 @@ import math
 import copy
 import csv
 import sys
-import pdb
 import re
 
 logger = None
@@ -188,7 +188,7 @@ class BasicLog:
         self.dump(4, BasicLog.ERROR, args)
     
     def warn(self, *args):
-        self.dump(3, BasicLog.WARN, args)
+        self.dump(3, BasicLog.WARNING, args)
     
     def print(self, *args):
         self.dump(2, BasicLog.NORMAL, args)
@@ -315,7 +315,7 @@ def do_collect(line_breaks, variables, cmdlines, patterns, runs, filepath, logfi
     
     with Pool(jobs) as p:
         with open(filepath, "w") as fout:
-            header = ["PERMID", "RUNID"] + [v.get_name() for v in variables] + [p.get_name() for p in patterns]
+            header = ["PERMID", "RUNID"] + [v.get_name() for v in variables] + [x.get_name() for x in patterns]
             writer = csv.writer(fout, delimiter=";", quoting=csv.QUOTE_MINIMAL)
             writer.writerow(header)
             
@@ -339,19 +339,19 @@ def do_collect(line_breaks, variables, cmdlines, patterns, runs, filepath, logfi
                                 ignore_once = False
                             else:
                                 ptask = tasks[k-1]
-                                writer.writerow([ptask.perm_id, ptask.run_id] + task.sequence + [p.get_value() for p in patterns])
+                                writer.writerow([ptask.perm_id, ptask.run_id] + task.sequence + [x.get_value() for x in patterns])
                                 fout.flush()
                             
-                            for p in patterns:
-                                p.clear()
+                            for x in patterns:
+                                x.clear()
                         
-                        for p in patterns:
-                            p.check(row)
+                        for x in patterns:
+                            x.check(row)
                 
                 if ignore_once:
                     ignore_once = False
                 else:
-                    writer.writerow([task.perm_id, task.run_id] + task.sequence + [p.get_value() for p in patterns])
+                    writer.writerow([task.perm_id, task.run_id] + task.sequence + [x.get_value() for x in patterns])
                     fout.flush()
             
             # Line breaks are defined by permutations, each combination creates a single line
@@ -366,23 +366,22 @@ def do_collect(line_breaks, variables, cmdlines, patterns, runs, filepath, logfi
                         last_idd = task.run_id
                         
                         ptask = tasks[k-1]
-                        writer.writerow([ptask.perm_id, ptask.run_id] + ptask.sequence + [p.get_value() for p in patterns])
+                        writer.writerow([ptask.perm_id, ptask.run_id] + ptask.sequence + [x.get_value() for x in patterns])
                         fout.flush()
                         
-                        for p in patterns:
-                            p.clear()
+                        for x in patterns:
+                            x.clear()
                     
                     for row in rows:
-                        for p in patterns:
-                            p.check(row)
+                        for x in patterns:
+                            x.check(row)
                 
-                writer.writerow([task.perm_id, task.run_id] + task.sequence + [p.get_value() for p in patterns])
+                writer.writerow([task.perm_id, task.run_id] + task.sequence + [x.get_value() for x in patterns])
                 fout.flush()
 
 
-def main(argv):
+def main(args):
     
-    args = Args(argv)
     filepath = "./collect_output.csv"
     logfilepath = None
     line_breaks = []

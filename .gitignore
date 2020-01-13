@@ -102,3 +102,4 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+host_parallelFit1_parallelPredictBleaching1.csv

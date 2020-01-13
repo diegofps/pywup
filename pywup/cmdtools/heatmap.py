@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 
 from collections import defaultdict
-from .shared import *
+
+from pywup.services.general import find_column
+from pywup.services.system import read_csv
 
 import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib
 import argparse
 import math
-import pdb
 
 
-def get_arguments(argv):
+def get_arguments(args):
 
     parser = argparse.ArgumentParser(description='Heatmap')
 
@@ -59,7 +60,7 @@ def get_arguments(argv):
     parser.add_argument('--verbose', type=bool, default=False,
                         help='print debug info')
 
-    return parser.parse_args(argv)
+    return parser.parse_args(args.all())
 
 
 def map_labels(column):
@@ -74,9 +75,9 @@ def map_labels(column):
 
     return tmp, labels
 
-def main(argv):
+def main(arg):
     # Parse arguments
-    args = get_arguments(argv)
+    args = get_arguments(arg)
 
     # Read the data
     src = read_csv(args.data)

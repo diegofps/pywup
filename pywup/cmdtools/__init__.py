@@ -1,1 +1,1 @@
-name="cmdtools"
+name = "cmdtools"
