@@ -105,7 +105,7 @@ Example 2 - Collect multiple rows from the same command execution
 * The parameter --log defines an output file to write extra details during the process.
 
 ```bash
-/home/diego/Sources/pywup/pywup/wup.py collect \
+wup collect \
     --n "[a-zA-Z0-9]+ : AvgIntersectionScore = [-0-9\.e\+]+  AvgCenterDistanceScore = [-0-9\.e\+]+" \
     --p DS_NAME "([a-zA-Z0-9]+) : AvgIntersectionScore = [-0-9\.e\+]+  AvgCenterDistanceScore = [-0-9\.e\+]+" \
     --p INTERSECTION "[a-zA-Z0-9]+ : AvgIntersectionScore = ([-0-9\.e\+]+)  AvgCenterDistanceScore = [-0-9\.e\+]+" \
@@ -128,7 +128,7 @@ Example 3 - Multiple commands and parallelization
 * Use parallelism to tune parameters and single process to measure times. When you are measuring execution time, multiple processes may slightly slow each other as they compete for resources.
 
 ```bash
-/home/diego/Sources/pywup/pywup/wup.py collect \
+wup collect \
     --n "[a-zA-Z0-9]+ : AvgIntersectionScore = [-0-9\.e\+]+  AvgCenterDistanceScore = [-0-9\.e\+]+" \
     --p DS_NAME "([a-zA-Z0-9]+) : AvgIntersectionScore = [-0-9\.e\+]+  AvgCenterDistanceScore = [-0-9\.e\+]+" \
     --p INTERSECTION "[a-zA-Z0-9]+ : AvgIntersectionScore = ([-0-9\.e\+]+)  AvgCenterDistanceScore = [-0-9\.e\+]+" \
@@ -191,20 +191,26 @@ wup bars \
 
 ## backup
 
-Example ***~/.wupbackup*** fil:e
+Example ***~/Dropbox/backups/system/wup.bak*** file
 
 ```
-file;~/.local/bin/macro_play;~/Dropbox/backup/local_bin/
-file;~/.local/bin/macro_rec_start;~/Dropbox/backup/local_bin/
-file;~/.local/bin/macro_rec_stop;~/Dropbox/backup/local_bin/
-folder;~/.config/compton;~/Dropbox/backup/compton
-file;~/.vimrc;~/Dropbox/backup/vimrc
-folder;~/.config/i3;~/Dropbox/backup/i3
-file;~/.wupbackup;~/Dropbox/backup/wupbackup
+file;~/.local/bin/macro_play;./local_bin/
+file;~/.local/bin/macro_rec_start;./local_bin/
+file;~/.local/bin/macro_rec_stop;./local_bin/
+folder;~/.config/compton;./compton
+file;~/.vimrc;./vimrc
+folder;~/.config/i3;./i3
 ```
 
 Invoke backup / restore
 
 ```bash
-wup backup
+# This will copy files from system (left) to backup folder (right), overwriting any change or previous file in the backup folder.
+wup backup create ~/Dropbox/backups/system/wup.bak
+
+# This will copy files from the backup folder (right) to the system (left), overwriting any change or previous file in the system.
+wup backup restore ~/Dropbox/backups/system/wup.bak
+
+# This will sync all files and backup folders, copying the most recent one to the right direction. 
+wup backup sync ~/Dropbox/backups/system/wup.bak
 ```
