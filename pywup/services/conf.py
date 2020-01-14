@@ -74,7 +74,7 @@ def search(filepath, addr, pop=False):
                 return data[key]
         else:
             return None
-    except:
+    except FileNotFoundError:
         return None
 
 
@@ -99,7 +99,7 @@ def set(addr, value, scope="local"):
     
     try:
         root = read(filepath)
-    except:
+    except FileNotFoundError:
         root = {}
     
     data = root
