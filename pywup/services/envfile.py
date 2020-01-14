@@ -137,12 +137,14 @@ class EnvFile:
 
         # TEMPLATES
         if "BUILD_VOLUMES" in root:
-            self.build_volumes = root["BUILD_VOLUMES"]
-            self.volumes += root["BUILD_VOLUMES"]
+            lines = root["BUILD_VOLUMES"].lines
+            self.build_volumes = lines
+            self.volumes += lines
         
         if "DEPLOY_VOLUMES" in root:
-            self.deploy_volumes = root["DEPLOY_VOLUMES"]
-            self.volumes += root["DEPLOY_VOLUMES"]
+            lines = root["DEPLOY_VOLUMES"].lines
+            self.deploy_volumes = lines
+            self.volumes += lines
         
         if "LAUNCH" in root:
             self.launch = root["LAUNCH"].lines

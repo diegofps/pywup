@@ -28,9 +28,9 @@ class Env(Context):
         return docker.exists_image(self.img_name)
 
 
-    def build(self):
+    def build(self, fromCommit=None):
         self.require(env=True)
-        docker.build_with_commits(self.cont_name, self.img_name, self.e)
+        docker.build_with_commits(self.cont_name, self.img_name, self.e, fromCommit)
 
 
     def start(self):
