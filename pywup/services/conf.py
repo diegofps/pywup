@@ -18,7 +18,7 @@ def get_global_filepath():
 
 def read(filepath):
     with open(filepath, "r") as fin:
-        data = yaml.load(fin)
+        data = yaml.load(fin, Loader=yaml.FullLoader)
         return data
 
 

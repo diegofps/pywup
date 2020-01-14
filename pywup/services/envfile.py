@@ -91,7 +91,7 @@ class EnvFile:
         self.workdir = "/"
         self.run = "ls"
         self.map_ports = []
-        self.volumes = []
+        #self.volumes = []
         self.build_volumes = []
         self.deploy_volumes = []
         self.expose = []
@@ -139,12 +139,12 @@ class EnvFile:
         if "BUILD_VOLUMES" in root:
             lines = root["BUILD_VOLUMES"].lines
             self.build_volumes = lines
-            self.volumes += lines
+            #self.volumes += lines
         
         if "DEPLOY_VOLUMES" in root:
             lines = root["DEPLOY_VOLUMES"].lines
             self.deploy_volumes = lines
-            self.volumes += lines
+            #self.volumes += lines
         
         if "LAUNCH" in root:
             self.launch = root["LAUNCH"].lines
@@ -226,6 +226,8 @@ class EnvFile:
             else:
                 while node_queue[-1].lvl >= node.lvl:
                     node_queue.pop()
+                
+                node_queue[-1].add(node)
         
         return root
 

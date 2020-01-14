@@ -31,8 +31,8 @@ def parse_volumes(volumes):
 def build_single(cont_name, e):
     createCmd = "docker run -i --name tmp"
     
-    if e.volumes:
-        createCmd += " -v " + " -v ".join(parse_volumes(e.volumes))
+    if e.build_volumes:
+        createCmd += " -v " + " -v ".join(parse_volumes(e.build_volumes))
     
     if e.expose:
         createCmd += " --expose=" + " --expose=".join(e.expose)
@@ -60,8 +60,8 @@ def build_with_commits(cont_name, img_name, e, fromCommit=None):
     # Prefix for creating the container
     createCmd = "docker run -i --name tmp"
     
-    if e.volumes:
-        createCmd += " -v " + " -v ".join(parse_volumes(e.volumes))
+    if e.build_volumes:
+        createCmd += " -v " + " -v ".join(parse_volumes(e.build_volumes))
     
     if e.expose:
         createCmd += " --expose=" + " --expose=".join(e.expose)
@@ -273,8 +273,8 @@ def new(img_name, cont_name, e):
 
     createCmd = "docker run -i --name tmp"
 
-    if e.volumes:
-        createCmd += " -v " + " -v ".join(e.volumes)
+    if e.deploy_volumes:
+        createCmd += " -v " + " -v ".join(e.deploy_volumes)
     
     if e.expose:
         createCmd += " --expose=" + " --expose=".join(e.expose)
