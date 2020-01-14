@@ -108,6 +108,6 @@ class Env(Context):
         docker.load_image(filepath)
 
 
-    def new(self):
+    def deploy(self):
         self.require(env=True)
-        docker.new(self.img_name, self.cont_name, self.e)
+        docker.deploy(self.img_name, self.cont_name, self.e)

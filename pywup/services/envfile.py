@@ -152,8 +152,8 @@ class EnvFile:
         if "START" in root:
             self.start = root["START"].lines
         
-        if "NEW" in root:
-            self.new = root["NEW"].lines
+        if "DEPLOY" in root:
+            self.deploy = root["DEPLOY"].lines
         
         if "OPEN" in root:
             self.open = root["OPEN"].lines

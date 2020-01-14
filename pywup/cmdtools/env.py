@@ -58,8 +58,8 @@ def do_run(args):
     Env().run(" ".join(args.all()))
 
 
-def do_new(args):
-    Env().new()
+def do_deploy(args):
+    Env().deploy()
 
 
 def do_rm(args):
@@ -104,7 +104,7 @@ def main(args):
     r.map("commit", do_commit, "Create an image from the environment")
     r.map("export", do_export, "Export the current image to a file in the current folder")
     r.map("import", do_import, "Imports an image file into a new image")
-    r.map("new", do_new, "Recreate the current environment using the existing image")
+    r.map("deploy", do_deploy, "Recreate the image built using the deploy volumes")
     r.map("ip", do_ip, "Recreate the current environment using the existing image")
     
     r.run()

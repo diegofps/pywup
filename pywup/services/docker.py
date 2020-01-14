@@ -267,14 +267,14 @@ def commit(cont_name, img_name):
     run("docker commit " + cont_name + " " + img_name)
 
 
-def new(img_name, cont_name, e):
+def deploy(img_name, cont_name, e):
     if not exists_image(img_name):
-        error("Image not found")
+        error("Image not found, did you build it?")
 
     createCmd = "docker run -i --name tmp"
 
     if e.deploy_volumes:
-        createCmd += " -v " + " -v ".join(e.deploy_volumes)
+        createCmd += " -v " + " -v ".join(parse_volumes(e.deploy_volumes))
     
     if e.expose:
         createCmd += " --expose=" + " --expose=".join(e.expose)
@@ -286,7 +286,7 @@ def new(img_name, cont_name, e):
 
     rm_container("tmp")
 
-    cmds = e.bashrc + e.new
+    cmds = e.bashrc + e.deploy
     run(createCmd, write=cmds)
 
     rm_container(cont_name)

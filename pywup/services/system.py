@@ -41,7 +41,7 @@ def quote(str):
     return '"' + re.sub(r'([\'\"\\])', r'\\\1', str) + '"'
 
 
-def run(cmds, write=None, read=False, suppressInterruption=False):
+def run(cmds, write=None, read=False, suppressInterruption=False, suppressError=False):
     if type(cmds) is not list:
         cmds = [cmds]
     
@@ -68,6 +68,9 @@ def run(cmds, write=None, read=False, suppressInterruption=False):
             lines = [line.decode("utf-8") for line in back.stdout]
             status = back.wait()
 
+            if not suppressError and status != 0:
+                error("Failed to execute command", " | ".join(cmds))
+            
             return status,lines
 
         elif write:
@@ -93,7 +96,12 @@ def run(cmds, write=None, read=False, suppressInterruption=False):
                 front.stdin.write(line.encode())
             front.stdin.close()
 
-            return ps[-1].wait(), None
+            status = ps[-1].wait()
+
+            if not suppressError and status != 0:
+                error("Failed to execute command", " | ".join(cmds))
+            
+            return status, None
 
         elif read:
             args = shlex.split(cmds[0])
@@ -109,6 +117,9 @@ def run(cmds, write=None, read=False, suppressInterruption=False):
             lines = [line.decode("utf-8") for line in back.stdout]
             status = back.wait()
 
+            if not suppressError and status != 0:
+                error("Failed to execute command", " | ".join(cmds))
+            
             return status, lines
 
         elif len(cmds) == 1:
@@ -129,7 +140,12 @@ def run(cmds, write=None, read=False, suppressInterruption=False):
             current = Popen(args, stdin=previous.stdout)
             ps.append(current)
 
-            return ps[-1].wait(), None
+            status = ps[-1].wait()
+            
+            if not suppressError and status != 0:
+                error("Failed to execute command", " | ".join(cmds))
+            
+            return status, None
 
     except KeyboardInterrupt as e:
         if not suppressInterruption:
