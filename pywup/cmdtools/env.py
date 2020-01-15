@@ -106,5 +106,7 @@ def main(args):
     r.map("import", do_import, "Imports an image file into a new image")
     r.map("deploy", do_deploy, "Recreate the image built using the deploy volumes")
     r.map("ip", do_ip, "Recreate the current environment using the existing image")
+    r.map("get", do_get, "Copy a file from the environment to your host")
+    r.map("send", do_send, "Send a file from the host to your environment")
     
     r.run()
