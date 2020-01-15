@@ -6,7 +6,6 @@ from functools import reduce
 
 from pywup.services.system import Args
 
-import numpy as np
 import shlex
 import tqdm
 import math
@@ -16,6 +15,17 @@ import sys
 import re
 
 logger = None
+
+def arange(first, last, step):
+    current = first
+    res = []
+
+    while current <= last:
+        res.append(current)
+        current += step
+    
+    return res
+
 
 class NewLine:
     
@@ -92,7 +102,7 @@ class ArithmeticVariable:
         first = float(args.pop_parameter())
         last  = float(args.pop_parameter())
         step  = float(args.pop_parameter()) if args.has_parameter() else 1
-        self.values = np.arange(first, last, step)
+        self.values = arange(first, last, step)
     
     def get_name(self):
         return self.name

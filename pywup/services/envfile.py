@@ -83,6 +83,7 @@ class EnvFile:
         self.open = []
         self.build = []
         self.launch = []
+        self.deploy = []
         self.new = []
 
         self.bashrc = []

@@ -76,7 +76,8 @@ def cluster(args):
     main(args)
 
 
-def wup(argv):
+def wup(*params):
+    argv = sys.argv[1:]
     r = Route(argv)
 
     r.map("use", use, "Set env and/or cluster files")
@@ -93,5 +94,5 @@ def wup(argv):
     r.run(handleError=True)
 
 if __name__ == "__main__":
-    wup(sys.argv[1:])
+    wup()
     
