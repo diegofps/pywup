@@ -22,6 +22,6 @@ setuptools.setup(
         'console_scripts': ['wup=pywup.wup:wup'],
     },
     install_requires=[
-        'colorcet', 'tqdm', 'PyYAML>=5.3'
+        'colorcet', 'tqdm', 'PyYAML'
     ]
 )

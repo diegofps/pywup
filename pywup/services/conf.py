@@ -18,8 +18,10 @@ def get_global_filepath():
 
 def read(filepath):
     with open(filepath, "r") as fin:
-        data = yaml.load(fin, Loader=yaml.FullLoader)
-        return data
+        if hasattr(yaml, "FullLoader"):
+            return yaml.load(fin, Loader=yaml.FullLoader)
+        else:
+            return yaml.load(fin)
 
 
 def write(data, filepath):

@@ -86,6 +86,18 @@ def do_ip(args):
     print(Env().ip())
 
 
+def do_get(args):
+    src = args.pop_parameter()
+    dst = args.pop_parameter()
+    print(Env().get(src, dst))
+
+
+def do_send(args):
+    src = args.pop_parameter()
+    dst = args.pop_parameter()
+    print(Env().send(src, dst))
+
+
 def main(args):
     r = Route(args)
 

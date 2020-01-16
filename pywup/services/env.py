@@ -111,3 +111,13 @@ class Env(Context):
     def deploy(self):
         self.require(env=True)
         docker.deploy(self.img_name, self.cont_name, self.e)
+
+
+    def get(self, src, dst):
+        self.require(env=True)
+        docker.copy(self.cont_name + ":" + src, dst)
+
+
+    def send(self, src, dst):
+        self.require(env=True)
+        docker.copy(src, self.cont_name + ":" + dst)

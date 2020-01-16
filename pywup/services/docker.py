@@ -316,3 +316,7 @@ def ls_clusters():
 def ls_cluster_nodes(clustername):
     run("docker ps -a -f \"name=wclus__" + clustername + "__*\"")
 
+
+def copy(src, dst):
+    run("docker cp " + src + " " + dst)
+
