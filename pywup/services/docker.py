@@ -12,27 +12,55 @@ def open_and_init(cont_name, bash_init, tty=True):
     return run(c)
 
 
-def parse_volumes(volumes):
+def clean_volumes(volumes, allow_missing=True):
     volumes = [j.strip() for j in volumes]
-    volumes = [expand_path(j) for j in volumes if j]
+    volumes = [j.split(":") for j in volumes if j]
 
     for v in volumes:
-        src = v.split(":")[0]
+        if len(v) != 2:
+            error("Valid volumes sintaxes are <SourcePath>:<DestinationPath> and :<DestinationPath>")
 
-        if not os.path.exists(src):
-            error("Missing source directory in host:", src)
+    volumes = [[expand_path(a), expand_path(b)] for a, b in volumes]
+    
+    for src, dst in volumes:
+        if src:
+            if not os.path.exists(src):
+                error("Missing source directory in host:", src)
+            
+            if not os.path.isdir(src):
+                error("Source volume in host is not a directory:", src)
         
-        if not os.path.isdir(src):
-            error("Source volume in host is not a directory:", src)
+        elif not allow_missing:
+            error("Must provide the source directory in", src + ":" + dst)
+
+        if not dst:
+            error("Invalid destination directory:", dst)
     
     return volumes
 
 
-def build_single(cont_name, e):
+def parse_volumes(volumes, extra_volumes):
+    volumes = clean_volumes(volumes, True)
+    extra_volumes = clean_volumes(extra_volumes, False)
+
+    extra_volumes_map = {v[1]:v[0] for v in extra_volumes}
+
+    for v in volumes:
+        if v[1] in extra_volumes_map:
+            v[0] = extra_volumes_map[v[1]]
+    
+    for v in volumes:
+        if not v[0]:
+            error("Use --v to specify a source directory for destination:", v[1])
+
+    return [v[0] + ":" + v[1] for v in volumes]
+
+
+def build_single(cont_name, e, extra_volumes=[]):
     createCmd = "docker run -i --name tmp"
     
     if e.build_volumes:
-        createCmd += " -v " + " -v ".join(parse_volumes(e.build_volumes))
+        createCmd += " -v " + " -v ".join(parse_volumes(e.build_volumes, extra_volumes))
     
     if e.expose:
         createCmd += " --expose=" + " --expose=".join(e.expose)
@@ -51,7 +79,7 @@ def build_single(cont_name, e):
     rename_container("tmp", cont_name)
 
 
-def build_with_commits(cont_name, img_name, e, fromCommit=None):
+def build_with_commits(cont_name, img_name, e, fromCommit=None, extra_volumes=[]):
 
     # Retrieve existing commits
     commits = ls_commits()
@@ -61,7 +89,7 @@ def build_with_commits(cont_name, img_name, e, fromCommit=None):
     createCmd = "docker run -i --name tmp"
     
     if e.build_volumes:
-        createCmd += " -v " + " -v ".join(parse_volumes(e.build_volumes))
+        createCmd += " -v " + " -v ".join(parse_volumes(e.build_volumes, extra_volumes))
     
     if e.expose:
         createCmd += " --expose=" + " --expose=".join(e.expose)
@@ -267,14 +295,14 @@ def commit(cont_name, img_name):
     run("docker commit " + cont_name + " " + img_name)
 
 
-def deploy(img_name, cont_name, e):
+def deploy(img_name, cont_name, e, extra_volumes=[]):
     if not exists_image(img_name):
         error("Image not found, did you build it?")
 
     createCmd = "docker run -i --name tmp"
 
     if e.deploy_volumes:
-        createCmd += " -v " + " -v ".join(parse_volumes(e.deploy_volumes))
+        createCmd += " -v " + " -v ".join(parse_volumes(e.deploy_volumes, extra_volumes))
     
     if e.expose:
         createCmd += " --expose=" + " --expose=".join(e.expose)

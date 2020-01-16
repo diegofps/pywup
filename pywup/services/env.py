@@ -108,9 +108,9 @@ class Env(Context):
         docker.load_image(filepath)
 
 
-    def deploy(self):
+    def deploy(self, extra_volumes):
         self.require(env=True)
-        docker.deploy(self.img_name, self.cont_name, self.e)
+        docker.deploy(self.img_name, self.cont_name, self.e, extra_volumes)
 
 
     def get(self, src, dst):

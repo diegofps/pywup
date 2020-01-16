@@ -9,12 +9,16 @@ import os
 
 def do_build(args):
     fromCommit = None
+    volumes = []
 
     while args.has_cmd():
         cmd = args.pop_cmd()
 
         if cmd == "--from":
             fromCommit = args.pop_parameter()
+        
+        elif cmd == "--v":
+            volumes.append(args.pop_parameter())
         
         else:
             error("Invalid parameter:", cmd)
@@ -59,7 +63,18 @@ def do_run(args):
 
 
 def do_deploy(args):
-    Env().deploy()
+    volumes = []
+
+    while args.has_cmd():
+        cmd = args.pop_cmd()
+
+        if cmd == "--v":
+            volumes.append(args.pop_parameter())
+        
+        else:
+            error("Invalid command: ", cmd)
+
+    Env().deploy(volumes)
 
 
 def do_rm(args):
