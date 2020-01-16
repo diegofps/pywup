@@ -8,6 +8,7 @@ import os
 
 
 def do_build(args):
+    allVolumes = False
     fromCommit = None
     volumes = []
 
@@ -20,10 +21,13 @@ def do_build(args):
         elif cmd == "--v":
             volumes.append(args.pop_parameter())
         
+        elif cmd == "--all-volumes":
+            allVolumes = True
+        
         else:
             error("Invalid parameter:", cmd)
     
-    Env().build(fromCommit=fromCommit)
+    Env().build(fromCommit=fromCommit, extra_volumes=volumes, allVolumes=allVolumes)
 
 
 def do_open(args):
@@ -64,6 +68,7 @@ def do_run(args):
 
 def do_deploy(args):
     volumes = []
+    allVolumes = False
 
     while args.has_cmd():
         cmd = args.pop_cmd()
@@ -71,10 +76,13 @@ def do_deploy(args):
         if cmd == "--v":
             volumes.append(args.pop_parameter())
         
+        elif cmd == "--all-volumes":
+            allVolumes = True
+        
         else:
             error("Invalid command: ", cmd)
 
-    Env().deploy(volumes)
+    Env().deploy(volumes, allVolumes)
 
 
 def do_rm(args):

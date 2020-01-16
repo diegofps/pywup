@@ -71,7 +71,7 @@ class ListVariable:
         self.name = args.pop_parameter()
         self.values = []
         
-        while args.has_cmd():
+        while args.has_parameter():
             self.values.append(args.pop_parameter())
     
     def get_name(self):

@@ -28,9 +28,9 @@ class Env(Context):
         return docker.exists_image(self.img_name)
 
 
-    def build(self, fromCommit=None):
+    def build(self, fromCommit=None, extra_volumes=[], allVolumes=False):
         self.require(env=True)
-        docker.build_with_commits(self.cont_name, self.img_name, self.e, fromCommit)
+        docker.build_with_commits(self.cont_name, self.img_name, self.e, fromCommit, extra_volumes, allVolumes)
 
 
     def start(self):
@@ -108,9 +108,9 @@ class Env(Context):
         docker.load_image(filepath)
 
 
-    def deploy(self, extra_volumes):
+    def deploy(self, extra_volumes=[], allVolumes=False):
         self.require(env=True)
-        docker.deploy(self.img_name, self.cont_name, self.e, extra_volumes)
+        docker.deploy(self.img_name, self.cont_name, self.e, extra_volumes, allVolumes)
 
 
     def get(self, src, dst):

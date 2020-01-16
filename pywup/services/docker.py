@@ -79,17 +79,22 @@ def build_single(cont_name, e, extra_volumes=[]):
     rename_container("tmp", cont_name)
 
 
-def build_with_commits(cont_name, img_name, e, fromCommit=None, extra_volumes=[]):
+def build_with_commits(cont_name, img_name, e, fromCommit=None, extra_volumes=[], allVolumes=False):
 
     # Retrieve existing commits
     commits = ls_commits()
     commits_map = {x[0] for x in commits}
 
+    if allVolumes:
+        volumes = e.deploy_volumes + e.build_volumes
+    else:
+        volumes = e.build_volumes
+
     # Prefix for creating the container
     createCmd = "docker run -i --name tmp"
     
-    if e.build_volumes:
-        createCmd += " -v " + " -v ".join(parse_volumes(e.build_volumes, extra_volumes))
+    if volumes:
+        createCmd += " -v " + " -v ".join(parse_volumes(volumes, extra_volumes))
     
     if e.expose:
         createCmd += " --expose=" + " --expose=".join(e.expose)
@@ -295,14 +300,19 @@ def commit(cont_name, img_name):
     run("docker commit " + cont_name + " " + img_name)
 
 
-def deploy(img_name, cont_name, e, extra_volumes=[]):
+def deploy(img_name, cont_name, e, extra_volumes=[], allVolumes=False):
     if not exists_image(img_name):
         error("Image not found, did you build it?")
 
+    if allVolumes:
+        volumes = e.deploy_volumes + e.build_volumes
+    else:
+        volumes = e.deploy_volumes
+
     createCmd = "docker run -i --name tmp"
 
-    if e.deploy_volumes:
-        createCmd += " -v " + " -v ".join(parse_volumes(e.deploy_volumes, extra_volumes))
+    if volumes:
+        createCmd += " -v " + " -v ".join(parse_volumes(volumes, extra_volumes))
     
     if e.expose:
         createCmd += " --expose=" + " --expose=".join(e.expose)
