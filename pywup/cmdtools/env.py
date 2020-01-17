@@ -51,11 +51,32 @@ def do_launch(args):
 
 
 def do_exec(args):
-    Env().exec([args.pop_parameter])
+    command = None
+    tty = True
+
+    while args.has_next():
+        if args.has_cmd():
+            cmd = args.pop_cmd()
+
+            if cmd == "--no-tty":
+                tty = False
+            
+            else:
+                error("Invalid parameter: ", cmd)
+        
+        else:
+            command = args.pop_parameter()
+
+    Env().exec([command], tty)
 
 
 def do_export(args):
-    Env().export()
+    tag = None
+
+    if args.has_parameter():
+        tag = args.pop_parameter()
+
+    Env().export(tag)
 
 
 def do_import(args):

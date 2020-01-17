@@ -291,8 +291,8 @@ def launch(cont_name, e):
     exec(cont_name, e.bashrc + e.launch + ["exit\n"])
 
 
-def exec(cont_name, cmds):
-    return open_and_init(cont_name, cmds)
+def exec(cont_name, cmds, tty=True):
+    return open_and_init(cont_name, cmds, tty)
 
 
 def commit(cont_name, img_name):

@@ -52,14 +52,14 @@ class Env(Context):
         docker.launch(self.cont_name, self.e)
 
 
-    def exec(self, cmds):
+    def exec(self, cmds, tty=True):
         self.require(env=True)
-        docker.exec(self.cont_name, self.e.bashrc + cmds)
+        docker.exec(self.cont_name, self.e.bashrc + cmds, tty)
 
 
-    def run(self, params):
+    def run(self, params, tty=True):
         cmd = [self.e.run + " " + params + "\n", "exit\n"]
-        self.exec(cmd)
+        self.exec(cmd, tty)
 
 
     def commit(self):
@@ -96,8 +96,8 @@ class Env(Context):
             print(*x)
 
 
-    def export(self):
-        filepath = get_export_filepath(self.name)
+    def export(self, tag = None):
+        filepath = get_export_filepath(self.name, tag)
 
         print("Exporting image commit for " + colors.YELLOW + self.img_name + colors.RESET + " as " + colors.YELLOW + filepath + colors.RESET)
         docker.export_image(self.img_name, filepath)

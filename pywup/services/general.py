@@ -4,8 +4,11 @@ from pywup.services import conf
 import os
 
 
-def get_export_filepath(tag):
-    return "wimg__" + tag + ".gz"
+def get_export_filepath(name, tag):
+    if tag:
+        return "wimg__" + name + "." + tag + ".gz"
+    else:
+        return "wimg__" + name + ".gz"
 
 
 def get_container_name(tag, clustername=None, i=None):
