@@ -123,7 +123,12 @@ def run(cmds, write=None, read=False, suppressInterruption=False, suppressError=
             return status, lines
 
         elif len(cmds) == 1:
-            return os.system(cmds[0]), None
+            status = os.system(cmds[0])
+
+            if not suppressError and status != 0:
+                error("Failed to execute command", " | ".join(cmds))
+            
+            return status, None
         
         else:
             args = shlex.split(cmds[0])

@@ -7,7 +7,7 @@ import os
 def open_and_init(cont_name, bash_init, tty=True):
     k = quote("".join(["source \"$HOME/.bashrc\"\n"] + bash_init))
     b = quote("bash --init-file <(echo " + k + ")")
-    tty = "-it " if tty else "-i "
+    tty = "-it " if tty else " "
     c = "docker exec " + tty + cont_name + " bash -c " + b.replace("$", "\\$")
     return run(c)
 
@@ -291,8 +291,8 @@ def launch(cont_name, e):
     exec(cont_name, e.bashrc + e.launch + ["exit\n"])
 
 
-def exec(cont_name, cmds):
-    return open_and_init(cont_name, cmds)
+def exec(cont_name, cmds, tty=True):
+    return open_and_init(cont_name, cmds, tty)
 
 
 def commit(cont_name, img_name):
