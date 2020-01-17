@@ -55,7 +55,7 @@ class Env(Context):
     def exec(self, cmds, tty=True):
         self.require(env=True)
         docker.start_container(self.cont_name, self.e)
-        docker.exec(self.cont_name, self.e.bashrc + cmds, tty)
+        docker.exec(self.cont_name, self.e.bashrc + cmds + ["\n", "exit\n"], tty)
 
 
     def run(self, params, tty=True):
