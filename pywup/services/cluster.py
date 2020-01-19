@@ -77,7 +77,7 @@ class Cluster(Context):
     def open(self, node_number):
         self.require(env=True, cluster=True)
         cont_name = get_container_name(self.name, self.cluster, node_number)
-        docker.open_and_init(cont_name, self.e.bashrc)
+        docker.init_and_open(cont_name, self.e.bashrc)
     
 
     def ls(self):

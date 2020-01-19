@@ -1,15 +1,27 @@
-from pywup.services.system import run, quote, error, expand_path, yprint
+from pywup.services.system import run, quote, quote_single, error, expand_path, yprint
 
 import re
 import os
 
 
-def open_and_init(cont_name, bash_init, tty=True):
-    k = quote("".join(["source \"$HOME/.bashrc\"\n"] + bash_init))
-    b = quote("bash --init-file <(echo " + k + ")")
-    tty = "-it " if tty else " "
-    c = "docker exec " + tty + cont_name + " bash -c " + b.replace("$", "\\$")
-    return run(c)
+def init_and_open(cont_name, bash_init):
+    k = quote("".join(["source \"$HOME/.bashrc\" 2> /dev/null \n"] + bash_init))
+    b = quote("bash --init-file <(echo " + k + ")").replace("$", "\\$")
+    return run("docker exec -it " + cont_name + " bash -c " + b)
+
+
+def init_and_run(cont_name, bash_init, cmd, attach=False):
+    if type(cmd) is not list:
+        cmd = [cmd, "exit\n"]
+    else:
+        cmd.append("exit\n")
+    
+    k = quote_single("".join(["source \"$HOME/.bashrc\" 2> /dev/null \n"] + bash_init + cmd))
+
+    if attach:
+        return run("docker exec -it " + cont_name + " bash -c " + k)
+    else:
+        return run("docker exec " + cont_name + " bash -c " + k)
 
 
 def clean_volumes(volumes, allow_missing=True):
@@ -18,7 +30,7 @@ def clean_volumes(volumes, allow_missing=True):
 
     for v in volumes:
         if len(v) != 2:
-            error("Valid volumes sintaxes are <SourcePath>:<DestinationPath> and :<DestinationPath>")
+            error("The only valid sintaxes for volumes are <SourcePath>:<DestinationPath> and :<DestinationPath>")
 
     volumes = [[expand_path(a), expand_path(b)] for a, b in volumes]
     
@@ -155,7 +167,7 @@ def build_with_commits(cont_name, img_name, e, fromCommit=None, extra_volumes=[]
         c = e.commits[i]
 
         yprint("Applying migration", c.name, "...")
-        status, _ = exec("tmp", c.lines + ["exit\n"])
+        status, _ = exec("tmp", e.bashrc, c.lines, False)
 
         if status != 0:
             error("Migration is not working, please fix it")
@@ -192,21 +204,21 @@ def rm_container(cont_name):
         cont_name = " ".join(cont_name)
     
     stop(cont_name)
-    run("docker rm " + cont_name + " 1> /dev/null 2> /dev/null")
+    run("docker rm " + cont_name + " 1> /dev/null 2> /dev/null", suppressError=True)
 
 
 def rm_image(img_name):
     if type(img_name) is list:
         img_name = " ".join(img_name)
     
-    run("docker rmi " + img_name + " 2> /dev/null")
+    run("docker rmi " + img_name + " 2> /dev/null", suppressError=True)
 
 
 def stop(cont_name):
     if type(cont_name) is list:
         cont_name = " ".join(cont_name)
     
-    run("docker kill " + cont_name + " 1> /dev/null 2> /dev/null")
+    run("docker kill " + cont_name + " 1> /dev/null 2> /dev/null", suppressError=True)
 
 
 def ls_containers():
@@ -272,10 +284,10 @@ def exists_image(img_name):
     return len(rows) >= 2
 
 
-def start_container(cont_name, e):
+def start_container(cont_name, e, attach=False):
     if type(cont_name) is list:
         for n in cont_name:
-            start_container(n, e)
+            start_container(n, e, attach)
         return
     
     if is_container_running(cont_name):
@@ -283,16 +295,17 @@ def start_container(cont_name, e):
     
     run("docker start " + cont_name + " > /dev/null")
 
-    cmds = e.bashrc + e.start + ["sleep 1\n exit\n"]
-    exec(cont_name, cmds)
+    cmds = e.start + ["sleep 1\n"]
+    exec(cont_name, e.bashrc, cmds, attach)
 
 
-def launch(cont_name, e):
-    exec(cont_name, e.bashrc + e.launch + ["exit\n"])
+def launch(cont_name, e, attach=False):
+    exec(cont_name, e.bashrc, e.launch, attach)
 
 
-def exec(cont_name, cmds, tty=True):
-    return open_and_init(cont_name, cmds, tty)
+def exec(cont_name, bashrc, cmds, attach=False):
+    return init_and_run(cont_name, bashrc, cmds, attach)
+    #return open_and_init(cont_name, cmds, tty)
 
 
 def commit(cont_name, img_name):

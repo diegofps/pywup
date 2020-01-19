@@ -11,7 +11,7 @@ import sys
 import os
 
 
-def use(args):
+def use(cmd, args):
     env = None
     cluster = None
 
@@ -39,39 +39,39 @@ def use(args):
     Context().use(env, cluster)
 
 
-def collect(args):
+def collect(cmd, args):
     from pywup.cmdtools.collect import main
     main(args)
 
-def heatmap(args):
+def heatmap(cmd, args):
     from pywup.cmdtools.heatmap import main
     main(args)
 
-def bars(args):
+def bars(cmd, args):
     from pywup.cmdtools.bars import main
     main(args)
 
-def backup(args):
+def backup(cmd, args):
     from pywup.cmdtools.backup import main
     main(args)
 
-def q(args):
+def q(cmd, args):
     from pywup.cmdtools.q import main
     main(args)
 
-def config(args):
+def config(cmd, args):
     from pywup.cmdtools.conf import main
     main(args)
 
-def env(args):
+def env(cmd, args):
     from pywup.cmdtools.env import main
     main(args)
 
-def renv(args):
+def renv(cmd, args):
     from pywup.cmdtools.renv import main
     main(args)
 
-def cluster(args):
+def cluster(cmd, args):
     from pywup.cmdtools.cluster import main
     main(args)
 

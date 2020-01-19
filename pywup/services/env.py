@@ -44,23 +44,23 @@ class Env(Context):
         cmds = self.e.bashrc + self.e.open
         
         docker.start_container(self.cont_name, self.e)
-        docker.open_and_init(self.cont_name, cmds, True)
+        docker.init_and_open(self.cont_name, cmds)
 
 
-    def launch(self):
+    def launch(self, attach=False):
         self.require(env=True)
-        docker.launch(self.cont_name, self.e)
+        docker.launch(self.cont_name, self.e, attach)
 
 
-    def exec(self, cmds, tty=True):
+    def exec(self, cmds, attach=False):
         self.require(env=True)
         docker.start_container(self.cont_name, self.e)
-        docker.exec(self.cont_name, self.e.bashrc + cmds + ["\n", "exit\n"], tty)
+        docker.exec(self.cont_name, self.e.bashrc, cmds + ["\n"], attach)
 
 
-    def run(self, params, tty=True):
-        cmd = [self.e.run + " " + params + "\n", "exit\n"]
-        self.exec(cmd, tty)
+    def run(self, params, attach=False):
+        cmd = [self.e.run + " " + params + "\n"]
+        self.exec(cmd, attach)
 
 
     def commit(self):
@@ -100,7 +100,7 @@ class Env(Context):
     def export(self, tag = None):
         filepath = get_export_filepath(self.name, tag)
 
-        print("Exporting image commit for " + colors.YELLOW + self.img_name + colors.RESET + " as " + colors.YELLOW + filepath + colors.RESET)
+        print("Exporting commit image for " + colors.YELLOW + self.img_name + colors.RESET + " as " + colors.YELLOW + filepath + colors.RESET)
         docker.export_image(self.img_name, filepath)
 
 

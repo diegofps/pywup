@@ -37,8 +37,20 @@ def yprint(*args):
     print(colors.YELLOW + " ".join(args) + colors.RESET)
 
 
+def wprint(*args):
+    print(colors.WHITE + " ".join(args) + colors.RESET)
+
+
+def gprint(*args):
+    print(colors.GREEN + " ".join(args) + colors.RESET)
+
+
 def quote(str):
     return '"' + re.sub(r'([\'\"\\])', r'\\\1', str) + '"'
+
+
+def quote_single(str):
+    return "'" + re.sub(r'([\'\"\\])', r'\\\1', str) + "'"
 
 
 def run(cmds, write=None, read=False, suppressInterruption=False, suppressError=False):
@@ -255,7 +267,6 @@ class Route:
     def run(self, handleError=False):
         try:
             if not self.args.has_parameter():
-                print("Available commands:\n")
                 return self.help()
             
             cmd = self.args.pop_parameter()
@@ -264,7 +275,8 @@ class Route:
                 return self.help()
             
             elif cmd in self.cmds:
-                return self.cmds[cmd].cb(self.args)
+                r = self.cmds[cmd]
+                return r.cb(r, self.args)
 
             else:
                 error("Invalid command:", cmd)
@@ -276,6 +288,170 @@ class Route:
                 raise e
     
     def help(self):
+        wprint("Available Commands:\n")
+
         l = max([len(x) for x in self.cmds])
         for key in self.cmds:
-            print("  " + key + " " * (l-len(key)) + " - " + self.cmds[key].description)
+            print("  " + colors.WHITE + key + colors.RESET + " " * (l-len(key)) + " - " + self.cmds[key].description)
+
+
+class ParamsItem:
+    
+    def __init__(self, name, length, default, description, mandatory):
+        self.name = name
+        self.default = default
+        self.description = description
+        self.mandatory = mandatory
+        self.value = default
+        self.received_values = []
+        self.length = length
+    
+
+    def set(self, value):
+        self.received_values.append(value)
+    
+
+    def has(self):
+        if self.received_values:
+            return True
+        
+        else:
+            return False
+
+
+    def get(self):
+        if self.received_values:
+            return self.received_values[-1]
+        
+        elif self.mandatory:
+            error("Missing parameter:", self.name)
+        
+        else:
+            return self.default
+    
+
+    def get_all(self):
+        if self.mandatory and not self.received_values:
+            error("Missing parameter:", self.name)
+        else:
+            return self.received_values
+
+
+class Params:
+
+    def __init__(self, cmd, args, limit_parameters=True):
+        self.parent = cmd
+        self.name = args.last
+        self.args = args
+        self.input_parameters = []
+        self.parameters = []
+        self.names = {}
+        self.limit_parameters = limit_parameters
+
+    def map(self, name, n, default, description, mandatory=False):
+        item = ParamsItem(name, n, default, description, mandatory)
+        self.names[name] = item
+
+        if not name.startswith("--"):
+            self.parameters.append(item)
+    
+
+    def help(self):
+        options = [self.names[key] for key in self.names if self.names[key].name.startswith("--")]
+        arguments = self.parameters
+
+        if self.parent:
+            wprint("DESCRIPTION:")
+            print("    " + self.parent.description)
+            print()
+
+        wprint("SINTAX:")
+
+        if arguments and options:
+            print("    ... " + self.name + colors.GREEN + " " + " ".join(["[" + x.name + "]" for x in self.parameters]) + colors.YELLOW + " {OPTIONS}" + colors.RESET)
+        
+        elif arguments:
+            print("    ... " + self.name + colors.GREEN + " " + " ".join(["[" + x.name + "]" for x in self.parameters]) + colors.RESET)
+
+        elif options:
+            print("    ... " + self.name + colors.YELLOW + " {OPTIONS}" + colors.RESET)
+        
+        else:
+            print("    ... " + self.name)
+
+        if arguments:
+            print()
+            wprint("ARGUMENTS:")
+
+            l = max([len(x.name) for x in arguments])
+            for x in arguments:
+                print("    " + colors.GREEN + x.name + colors.RESET + " " * (l-len(x.name)) + " - " + x.description)
+        
+        if options:
+            print()
+            wprint("OPTIONS:")
+
+            l = max([len(x.name) for x in options])
+            for x in options:
+                print("    " + colors.YELLOW + x.name + colors.RESET + " " * (l-len(x.name)) + " - " + x.description)
+        
+        print()
+
+
+    def run(self):
+        while self.args.has_next():
+            if self.args.has_cmd():
+                cmd = self.args.pop_cmd()
+
+                if cmd in self.names:
+                    item = self.names[cmd]
+
+                    if item.length == 0:
+                        values = True
+                    elif item.length == 1:
+                        values = self.args.pop_parameter()
+                    else:
+                        values = [self.args.pop_parameter() for _ in range(item.length)]
+                    
+                    item.set(values)
+                
+                elif cmd == "--help":
+                    self.help()
+                    return False
+                
+                else:
+                    error("Invalid parameter: ", cmd)
+            
+            else:
+                index = len(self.input_parameters)
+                cmd = self.args.pop_parameter()
+
+                if index < len(self.parameters):
+                    self.input_parameters.append(cmd)
+                    self.parameters[index].set(cmd)
+
+                elif self.limit_parameters:
+                    error("Too many parameters")
+        
+        return True
+
+
+    def has(self, name):
+        if not name in self.names:
+            error("Unknown parameter:", name)
+        
+        return self.names[name].has()
+
+    def get(self, name):
+        if not name in self.names:
+            error("Unknown parameter:", name)
+        
+        return self.names[name].get()
+    
+
+    def get_all(self, name):
+        if not name in self.names:
+            error("Unknown parameter:", name)
+        
+        return self.names[name].get_all()
+    
