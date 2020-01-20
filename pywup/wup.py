@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from pywup.services.general import lookup_env, lookup_cluster, update_state
-from pywup.services.system import abort, error, WupError, Route
+from pywup.services.system import abort, error, WupError, Route, Params
 from pywup.services.context import Context
 from pywup.services import conf
 
@@ -12,73 +12,56 @@ import os
 
 
 def use(cmd, args):
-    env = None
-    cluster = None
-
-    while args.has_next():
-        if args.has_cmd():
-            cmd = args.pop_cmd()
-
-            if cmd == "--env":
-                env = args.pop_parameter()
-            
-            elif cmd == "--cluster":
-                cluster = args.pop_parameter()
-            
-            else:
-                error("Invalid parameter:", cmd)
-            
-        else:
-            if env is None:
-                env = args.pop_parameter()
-            elif cluster is None:
-                cluster = args.pop_parameter()
-            else:
-                error("Too many parameters")
+    params = Params(cmd, args)
+    params.map("env", 1, None, "Name or path of environment file")
+    params.map("cluster", 1, None, "Name or path of cluster file")
+    params.map("--env", 1, None, "Name or path of environment file")
+    params.map("--cluster", 1, None, "Name or path of cluster file")
     
-    Context().use(env, cluster)
-
+    if params.run():
+        env = params.get("--env") if params.get("--env") else params.get("env")
+        cluster = params.get("--cluster") if params.get("--cluster") else params.get("cluster")
+        Context().use(env, cluster)
 
 def collect(cmd, args):
     from pywup.cmdtools.collect import main
-    main(args)
+    main(cmd, args)
 
 def heatmap(cmd, args):
     from pywup.cmdtools.heatmap import main
-    main(args)
+    main(cmd, args)
 
 def bars(cmd, args):
     from pywup.cmdtools.bars import main
-    main(args)
+    main(cmd, args)
 
 def backup(cmd, args):
     from pywup.cmdtools.backup import main
-    main(args)
+    main(cmd, args)
 
 def q(cmd, args):
     from pywup.cmdtools.q import main
-    main(args)
+    main(cmd, args)
 
 def config(cmd, args):
     from pywup.cmdtools.conf import main
-    main(args)
+    main(cmd, args)
 
 def env(cmd, args):
     from pywup.cmdtools.env import main
-    main(args)
+    main(cmd, args)
 
 def renv(cmd, args):
     from pywup.cmdtools.renv import main
-    main(args)
+    main(cmd, args)
 
 def cluster(cmd, args):
     from pywup.cmdtools.cluster import main
-    main(args)
+    main(cmd, args)
 
 
 def wup(*params):
-    argv = sys.argv[1:]
-    r = Route(argv)
+    r = Route(sys.argv[1:], "wup")
 
     r.map("use", use, "Set env and/or cluster files")
     r.map("collect", collect, "Run an app multiple times, variating its parameters and collecting its output attributes")

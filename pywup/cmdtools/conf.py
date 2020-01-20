@@ -39,12 +39,16 @@ def conf_parse_cmds(args, scope="local"):
     return scope, addr, value
 
 
-def conf_set(args):
+def conf_init(cmd, args):
+    conf.init(os.getcwd())
+
+
+def conf_set(cmd, args):
     scope, addr, value = conf_parse_cmds(args, scope="local")
     return conf.set(addr, value, scope=scope)
 
 
-def conf_get(args):
+def conf_get(cmd, args):
     scope, addr, value = conf_parse_cmds(args, scope="any")
 
     if value:
@@ -56,7 +60,7 @@ def conf_get(args):
         print(value)
 
 
-def conf_pop(args):
+def conf_pop(cmd, args):
     scope, addr, value = conf_parse_cmds(args, scope="local")
 
     if value:
@@ -65,12 +69,8 @@ def conf_pop(args):
     return conf.get(addr, scope=scope)
 
 
-def conf_init(args):
-    conf.init(os.getcwd())
-
-
-def main(args):
-    r = Route(args)
+def main(cmd, args):
+    r = Route(args, parent=cmd)
 
     r.map("init", conf_init, "Initialize an empty wup settings in the current directory")
     r.map("get", conf_get, "Get the value associated with an attribute")

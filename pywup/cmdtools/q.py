@@ -1,31 +1,17 @@
-from pywup.services.system import error
+from pywup.services.system import error, Params
 
 import os
 
-def main(args):
-    show_header = True
-    query = None
+def main(cmd, args):
+    params = Params(cmd, args)
+    params.map("query", 1, None, "SQL to be run")
+    params.map("--q", 0, None, "Do not output headers in the output")
 
-    while args.has_next():
-        if args.has_cmd():
-            cmd = args.pop_cmd()
+    if params.run():
+        query = params.get("query")
+        quiet = params.has("--q")
 
-            if cmd == "--q":
-                show_header = False
-
-            else:
-                error("Invalid parameter:", cmd)
-            
-        elif args.has_parameter():
-            query = args.pop_parameter()
-
+        if quiet:
+            os.system("q -H -d \";\" \"" + query + "\"")
         else:
-            error("Unexpected input: ", args.pop_next())
-    
-    if query is None:
-        error("Missing query")
-    
-    if show_header:
-        os.system("q -H -d \";\" \"" + query + "\" -O")
-    else:
-        os.system("q -H -d \";\" \"" + query + "\"")
+            os.system("q -H -d \";\" \"" + query + "\" -O")

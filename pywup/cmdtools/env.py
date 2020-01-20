@@ -14,7 +14,7 @@ def do_build(cmd, args):
     params.map("--all-volumes", 0, None, "Deploy using all volumes, BUILD_VOLUMES and DEPLOY_VOLUMES")
     
     if params.run():
-        fromCommit = params.get("from")
+        fromCommit = params.get("--from")
         volumes = params.get_all("--v")
         useAllVolumes = params.has("--all-volumes")
 
@@ -47,8 +47,11 @@ def do_commit(cmd, args):
 
 def do_launch(cmd, args):
     params = Params(cmd, args)
+    params.map("--attach", 0, None, "Connects your terminal to the process inside the container")
+
     if params.run():
-        Env().launch()
+        attach = params.has("--attach")
+        Env().launch(attach)
 
 
 def do_exec(cmd, args):
@@ -150,8 +153,8 @@ def do_send(cmd, args):
         print(Env().send(params.get("src"), params.get("dst")))
 
 
-def main(args):
-    r = Route(args)
+def main(cmd, args):
+    r = Route(args, cmd)
 
     r.map("build", do_build, "Builds the current environment")
     r.map("open", do_open, "Opens the environment, starting it if necessary")
@@ -163,13 +166,13 @@ def main(args):
     r.map("ls", do_ls, "Lists all environments")
     r.map("lsi", do_lsi, "Lists all environment images")
     r.map("lsc", do_lsc, "Lists all commit images")
-    r.map("rm", do_rm, "Remove an environment")
-    r.map("rmi", do_rmi, "Remove an environment image")
+    r.map("rm", do_rm, "Remove the environment container")
+    r.map("rmi", do_rmi, "Remove the environment image")
     r.map("commit", do_commit, "Create an image from the environment")
     r.map("export", do_export, "Export the current image to a file in the current folder")
     r.map("import", do_import, "Imports an image file into a new image")
     r.map("deploy", do_deploy, "Recreate the image built using the deploy volumes")
-    r.map("ip", do_ip, "Recreate the current environment using the existing image")
+    r.map("ip", do_ip, "Get the environment ip address")
     r.map("get", do_get, "Copy a file from the environment to your host")
     r.map("send", do_send, "Send a file from the host to your environment")
     

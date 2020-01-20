@@ -237,7 +237,7 @@ def do_bars(args):
         plt.show()
 
 
-def main(args):
+def main(cmd, args):
 
     b = SimpleNamespace()
     src = None

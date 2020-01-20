@@ -246,40 +246,45 @@ def read_csv(filepath):
 
 class RouteCmd:
 
-    def __init__(self, cmd, cb, description):
-        self.cmd = cmd
+    def __init__(self, name, cb, description, parent=None):
+        self.parent = parent
+        self.name = name
         self.cb = cb
         self.description = description
 
 
 class Route:
 
-    def __init__(self, arg):
+    def __init__(self, arg, parent=None):
+        if type(parent) is str:
+            parent = RouteCmd(parent, None, None, None)
+        
         self.args = arg if type(arg) is Args else Args(arg)
+        self.parent = parent
         self.cmds = {}
 
-    def map(self, cmd, cb, description):
-        if cmd in self.cmds:
-            error(cmd + " is already in use")
+    def map(self, name, cb, description):
+        if name in self.cmds:
+            error(name + " is already in use")
         
-        self.cmds[cmd] = RouteCmd(cmd, cb, description)
+        self.cmds[name] = RouteCmd(name, cb, description, self.parent)
 
     def run(self, handleError=False):
         try:
             if not self.args.has_parameter():
                 return self.help()
             
-            cmd = self.args.pop_parameter()
+            name = self.args.pop_parameter()
 
-            if cmd == "help":
-                return self.help()
-            
-            elif cmd in self.cmds:
-                r = self.cmds[cmd]
+            if name in self.cmds:
+                r = self.cmds[name]
                 return r.cb(r, self.args)
 
+            elif name == "--help":
+                return self.help()
+            
             else:
-                error("Invalid command:", cmd)
+                error("Invalid command:", name)
 
         except WupError as e:
             if handleError:
@@ -305,7 +310,7 @@ class ParamsItem:
         self.value = default
         self.received_values = []
         self.length = length
-    
+
 
     def set(self, value):
         self.received_values.append(value)
@@ -360,6 +365,14 @@ class Params:
         options = [self.names[key] for key in self.names if self.names[key].name.startswith("--")]
         arguments = self.parameters
 
+        names = []
+        current = self.parent
+        while current is not None:
+            names.append(current.name)
+            current = current.parent
+        names.reverse()
+        name = " ".join(names)
+
         if self.parent:
             wprint("DESCRIPTION:")
             print("    " + self.parent.description)
@@ -368,16 +381,16 @@ class Params:
         wprint("SINTAX:")
 
         if arguments and options:
-            print("    ... " + self.name + colors.GREEN + " " + " ".join(["[" + x.name + "]" for x in self.parameters]) + colors.YELLOW + " {OPTIONS}" + colors.RESET)
+            print("    " + name + colors.GREEN + " " + " ".join(["[" + x.name + "]" for x in self.parameters]) + colors.YELLOW + " {OPTIONS}" + colors.RESET)
         
         elif arguments:
-            print("    ... " + self.name + colors.GREEN + " " + " ".join(["[" + x.name + "]" for x in self.parameters]) + colors.RESET)
+            print("    " + name + colors.GREEN + " " + " ".join(["[" + x.name + "]" for x in self.parameters]) + colors.RESET)
 
         elif options:
-            print("    ... " + self.name + colors.YELLOW + " {OPTIONS}" + colors.RESET)
+            print("    " + name + colors.YELLOW + " {OPTIONS}" + colors.RESET)
         
         else:
-            print("    ... " + self.name)
+            print("    " + name)
 
         if arguments:
             print()
@@ -401,10 +414,10 @@ class Params:
     def run(self):
         while self.args.has_next():
             if self.args.has_cmd():
-                cmd = self.args.pop_cmd()
+                name = self.args.pop_cmd()
 
-                if cmd in self.names:
-                    item = self.names[cmd]
+                if name in self.names:
+                    item = self.names[name]
 
                     if item.length == 0:
                         values = True
@@ -415,20 +428,20 @@ class Params:
                     
                     item.set(values)
                 
-                elif cmd == "--help":
+                elif name == "--help":
                     self.help()
                     return False
                 
                 else:
-                    error("Invalid parameter: ", cmd)
+                    error("Invalid parameter: ", name)
             
             else:
                 index = len(self.input_parameters)
-                cmd = self.args.pop_parameter()
+                name = self.args.pop_parameter()
 
                 if index < len(self.parameters):
-                    self.input_parameters.append(cmd)
-                    self.parameters[index].set(cmd)
+                    self.input_parameters.append(name)
+                    self.parameters[index].set(name)
 
                 elif self.limit_parameters:
                     error("Too many parameters")

@@ -84,7 +84,7 @@ def parse_file(filepath, to_left, to_right):
             else:
                 print("error: Inline rule in line. Options are [file, folder], got", cells[0])
 
-def main(args):
+def main(cmd, args):
     cmd = args.pop_parameter()
     filepath = args.pop_parameter() if args.has_parameter() else "~/.wupbackup"
     

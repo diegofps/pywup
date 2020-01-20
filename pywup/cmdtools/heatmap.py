@@ -75,7 +75,7 @@ def map_labels(column):
 
     return tmp, labels
 
-def main(arg):
+def main(cmd, arg):
     # Parse arguments
     args = get_arguments(arg)
 

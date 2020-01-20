@@ -166,7 +166,7 @@ def build_with_commits(cont_name, img_name, e, fromCommit=None, extra_volumes=[]
     for i in range(restore_point, len(e.commits)):
         c = e.commits[i]
 
-        yprint("Applying migration", c.name, "...")
+        yprint("Applying", c.name, "migration ...")
         status, _ = exec("tmp", e.bashrc, c.lines, False)
 
         if status != 0:

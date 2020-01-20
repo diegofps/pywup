@@ -28,7 +28,7 @@ class Cluster(Context):
         nodes = [get_container_name(self.name, clustername, i) for i in range(qtt)]
 
         for cont_name in nodes:
-            docker.new(self.img_name, cont_name, self.e)
+            docker.deploy(self.img_name, cont_name, self.e)
         
         data = {
             "local_arch": {

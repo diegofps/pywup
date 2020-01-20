@@ -390,7 +390,7 @@ def do_collect(line_breaks, variables, cmdlines, patterns, runs, filepath, logfi
                 fout.flush()
 
 
-def main(args):
+def main(cmd, args):
     
     filepath = "./collect_output.csv"
     logfilepath = None

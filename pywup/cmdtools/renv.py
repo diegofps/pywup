@@ -56,8 +56,8 @@ def renv_run(args):
     pass
 
 
-def main(args):
-    r = Route(args)
+def main(cmd, args):
+    r = Route(args, cmd)
 
     r.map("set", renv_set, "Sets the current machines set using a .renv file")
     r.map("deploy", renv_deploy, "Deploy an image and its data to remote machines")
