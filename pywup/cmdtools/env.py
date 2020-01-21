@@ -85,7 +85,8 @@ def do_run(cmd, args):
     params = Params(cmd, args, limit_parameters=False)
 
     if params.run():
-        Env().run(" ".join(params.input_parameters))
+        arguments = ["\"" + x + "\"" for x in params.input_parameters]
+        Env().run(" ".join(arguments))
 
 
 def do_deploy(cmd, args):

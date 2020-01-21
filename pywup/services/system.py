@@ -50,16 +50,19 @@ def quote(str):
 
 
 def quote_single(str):
-    return "'" + re.sub(r'([\'\"\\])', r'\\\1', str) + "'"
+    return "'" + re.sub(r'([\'\\])', r'\\\1', str) + "'"
 
 
-def run(cmds, write=None, read=False, suppressInterruption=False, suppressError=False):
+def run(cmds, write=None, read=False, suppressInterruption=False, suppressError=False, verbose=False):
     if type(cmds) is not list:
         cmds = [cmds]
     
     if not cmds:
         return
     
+    if verbose:
+        print("Executing command: " + " | ".join(cmds))
+
     try:
         if write and read:
             args = shlex.split(cmds[0])
@@ -445,6 +448,9 @@ class Params:
 
                 elif self.limit_parameters:
                     error("Too many parameters")
+                
+                else:
+                    self.input_parameters.append(name)
         
         return True
 

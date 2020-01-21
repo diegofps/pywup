@@ -305,7 +305,6 @@ def launch(cont_name, e, attach=False):
 
 def exec(cont_name, bashrc, cmds, attach=False):
     return init_and_run(cont_name, bashrc, cmds, attach)
-    #return open_and_init(cont_name, cmds, tty)
 
 
 def commit(cont_name, img_name):
