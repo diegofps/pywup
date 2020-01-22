@@ -329,13 +329,19 @@ class ParamsItem:
 
     def get(self):
         if self.received_values:
-            return self.received_values[-1]
+            if self.length == 0:
+                return True
+            else:
+                return self.received_values[-1]
         
         elif self.mandatory:
             error("Missing parameter:", self.name)
         
         else:
-            return self.default
+            if self.length == 0:
+                return False
+            else:
+                return self.default
     
 
     def get_all(self):
@@ -348,46 +354,49 @@ class ParamsItem:
 class Params:
 
     def __init__(self, cmd, args, limit_parameters=True):
-        self.parent = cmd
-        self.name = args.last
-        self.args = args
-        self.input_parameters = []
-        self.parameters = []
-        self.names = {}
-        self.limit_parameters = limit_parameters
+        self._parent = cmd
+        self._name = args.last
+        self._args = args
+        self._input_parameters = []
+        self._parameters = []
+        self._names = {}
+        self._limit_parameters = limit_parameters
 
     def map(self, name, n, default, description, mandatory=False):
+        if name in dir(self):
+            error("Can't use " + name + " as name")
+        
         item = ParamsItem(name, n, default, description, mandatory)
-        self.names[name] = item
+        self._names[name] = item
 
         if not name.startswith("--"):
-            self.parameters.append(item)
+            self._parameters.append(item)
     
 
     def help(self):
-        options = [self.names[key] for key in self.names if self.names[key].name.startswith("--")]
-        arguments = self.parameters
+        options = [self._names[key] for key in self._names if self._names[key].name.startswith("--")]
+        arguments = self._parameters
 
         names = []
-        current = self.parent
+        current = self._parent
         while current is not None:
             names.append(current.name)
             current = current.parent
         names.reverse()
         name = " ".join(names)
 
-        if self.parent:
+        if self._parent:
             wprint("DESCRIPTION:")
-            print("    " + self.parent.description)
+            print("    " + self._parent.description)
             print()
 
         wprint("SINTAX:")
 
         if arguments and options:
-            print("    " + name + colors.GREEN + " " + " ".join(["[" + x.name + "]" for x in self.parameters]) + colors.YELLOW + " {OPTIONS}" + colors.RESET)
+            print("    " + name + colors.GREEN + " " + " ".join(["[" + x.name + "]" for x in self._parameters]) + colors.YELLOW + " {OPTIONS}" + colors.RESET)
         
         elif arguments:
-            print("    " + name + colors.GREEN + " " + " ".join(["[" + x.name + "]" for x in self.parameters]) + colors.RESET)
+            print("    " + name + colors.GREEN + " " + " ".join(["[" + x.name + "]" for x in self._parameters]) + colors.RESET)
 
         elif options:
             print("    " + name + colors.YELLOW + " {OPTIONS}" + colors.RESET)
@@ -415,19 +424,19 @@ class Params:
 
 
     def run(self):
-        while self.args.has_next():
-            if self.args.has_cmd():
-                name = self.args.pop_cmd()
+        while self._args.has_next():
+            if self._args.has_cmd():
+                name = self._args.pop_cmd()
 
-                if name in self.names:
-                    item = self.names[name]
+                if name in self._names:
+                    item = self._names[name]
 
                     if item.length == 0:
                         values = True
                     elif item.length == 1:
-                        values = self.args.pop_parameter()
+                        values = self._args.pop_parameter()
                     else:
-                        values = [self.args.pop_parameter() for _ in range(item.length)]
+                        values = [self._args.pop_parameter() for _ in range(item.length)]
                     
                     item.set(values)
                 
@@ -439,38 +448,52 @@ class Params:
                     error("Invalid parameter: ", name)
             
             else:
-                index = len(self.input_parameters)
-                name = self.args.pop_parameter()
+                index = len(self._input_parameters)
+                name = self._args.pop_parameter()
 
-                if index < len(self.parameters):
-                    self.input_parameters.append(name)
-                    self.parameters[index].set(name)
+                if index < len(self._parameters):
+                    self._input_parameters.append(name)
+                    self._parameters[index].set(name)
 
-                elif self.limit_parameters:
+                elif self._limit_parameters:
                     error("Too many parameters")
                 
                 else:
-                    self.input_parameters.append(name)
+                    self._input_parameters.append(name)
         
         return True
 
 
     def has(self, name):
-        if not name in self.names:
+        if not name in self._names:
             error("Unknown parameter:", name)
         
-        return self.names[name].has()
+        return self._names[name].has()
 
     def get(self, name):
-        if not name in self.names:
+        if not name in self._names:
             error("Unknown parameter:", name)
         
-        return self.names[name].get()
+        return self._names[name].get()
     
 
     def get_all(self, name):
-        if not name in self.names:
+        if not name in self._names:
             error("Unknown parameter:", name)
         
-        return self.names[name].get_all()
+        return self._names[name].get_all()
+    
+
+    def __getattr__(self, name):
+        if name.startswith("every__"):
+            return Params.get_all(self, name[5:].replace("_", "-"))
+        
+        elif name.startswith("every_"):
+            return Params.get_all(self, name[5:].replace("_", "-"))
+
+        elif name.startswith("__"):
+            return Params.get(self, name.replace("_", "-"))
+        
+        else:
+            return Params.get(self, name.replace("_", "-"))
     

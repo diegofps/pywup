@@ -211,7 +211,7 @@ def rm_image(img_name):
     if type(img_name) is list:
         img_name = " ".join(img_name)
     
-    run("docker rmi " + img_name + " 2> /dev/null", suppressError=True)
+    run("docker rmi -f " + img_name + "", suppressError=True)
 
 
 def stop(cont_name):

@@ -55,7 +55,7 @@ class Context:
             self.cluster_env = None
 
 
-    def use(self, env, cluster):
+    def use(self, env, cluster, arch):
         if env is not None:
             env_name, env_filepath = lookup_env(env)
             self.set_env(env_name, env_filepath)
@@ -63,6 +63,9 @@ class Context:
         if cluster is not None:
             cluster_name, cluster_filepath = lookup_cluster(cluster)
             self.set_cluster(cluster_name, cluster_filepath)
+
+        if arch is not None:
+            self.set_arch(arch)
 
         update_state()
     
@@ -75,6 +78,10 @@ class Context:
     def set_cluster(self, cluster_name, cluster_filepath):
         conf.set("wup.cluster_name", cluster_name, scope="global")
         conf.set("wup.cluster_filepath", expand_path(cluster_filepath), scope="global")
+    
+
+    def set_arch(self, arch_name):
+        conf.set("wup.arch", arch_name, scope="global")
     
 
     def require(self, env=False, cluster=False):

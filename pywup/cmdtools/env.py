@@ -8,150 +8,142 @@ import os
 
 
 def do_build(cmd, args):
-    params = Params(cmd, args)
-    params.map("--from", 1, None, "Start build from this snapshot")
-    params.map("--v", 1, None, "Manually map a host folderpath to a folderpath inside this new environment")
-    params.map("--all-volumes", 0, None, "Deploy using all volumes, BUILD_VOLUMES and DEPLOY_VOLUMES")
+    p = Params(cmd, args)
+    p.map("--from", 1, None, "Start build from this snapshot")
+    p.map("--v", 1, None, "Manually map a host folderpath to a folderpath inside this new environment")
+    p.map("--all-volumes", 0, None, "Deploy using all volumes, BUILD_VOLUMES and DEPLOY_VOLUMES")
     
-    if params.run():
-        fromCommit = params.get("--from")
-        volumes = params.get_all("--v")
-        useAllVolumes = params.has("--all-volumes")
-
-        Env().build(fromCommit=fromCommit, extra_volumes=volumes, allVolumes=useAllVolumes)
+    if p.run():
+        Env().build(fromCommit=p.__from, extra_volumes=p.every__v, allVolumes=p.__all_volumes)
 
 
 def do_open(cmd, args):
-    params = Params(cmd, args)
-    if params.run():
+    p = Params(cmd, args)
+    if p.run():
         Env().open()
 
 
 def do_start(cmd, args):
-    params = Params(cmd, args)
-    if params.run():
+    p = Params(cmd, args)
+    if p.run():
         Env().start()
 
 
 def do_stop(cmd, args):
-    params = Params(cmd, args)
-    if params.run():
+    p = Params(cmd, args)
+    if p.run():
         Env().stop()
 
 
 def do_commit(cmd, args):
-    params = Params(cmd, args)
-    if params.run():
+    p = Params(cmd, args)
+    if p.run():
         Env().commit()
 
 
 def do_launch(cmd, args):
-    params = Params(cmd, args)
-    params.map("--attach", 0, None, "Connects your terminal to the process inside the container")
+    p = Params(cmd, args)
+    p.map("--attach", 0, None, "Connects your terminal to the process inside the container")
 
-    if params.run():
-        attach = params.has("--attach")
-        Env().launch(attach)
+    if p.run():
+        Env().launch(p.__attach)
 
 
 def do_exec(cmd, args):
-    params = Params(cmd, args)
-    params.map("command", 1, None, "Command to be run inside the container", mandatory=True)
-    params.map("--attach", 0, None, "Connects your terminal to the process inside the container")
+    p = Params(cmd, args)
+    p.map("command", 1, None, "Command to be run inside the container", mandatory=True)
+    p.map("--attach", 0, None, "Connects your terminal to the process inside the container")
     
-    if params.run():
-        cmds = [params.get("command")]
-        attach = params.has("--attach")
-        Env().exec(cmds, attach)
+    if p.run(): 
+        Env().exec([p.command], p.__attach)
 
 
 def do_export(cmd, args):
-    params = Params(cmd, args)
-    params.map("tag", 1, None, "If tag is provided, the output file will be wimg__<ENVNAME>.<TAG>.gz")
+    p = Params(cmd, args)
+    p.map("--tag", 1, None, "Replaces the tag in the output file. Default is the date")
+    p.map("--arch", 1, None, "Replaces the architecture name in the output file. Default name is generic")
     
-    if params.run():
-        Env().export(params.get("tag"))
+    if p.run():
+        Env().export(tag=p.__tag, arch=p.__arch)
 
 
 def do_import(cmd, args):
-    params = Params(cmd, args)
-    params.map("filepath", 1, None, "Path to the image to be imported from disk")
+    p = Params(cmd, args)
+    p.map("filepath", 1, None, "Path to the image to be imported from disk")
 
-    if params.run():
-        Env().load(params.get("filepath"))
+    if p.run():
+        Env().load(p.filepath)
 
 
 def do_run(cmd, args):
-    params = Params(cmd, args, limit_parameters=False)
+    p = Params(cmd, args, limit_parameters=False)
 
-    if params.run():
-        arguments = ["\"" + x + "\"" for x in params.input_parameters]
+    if p.run():
+        arguments = ["\"" + x + "\"" for x in p._input_parameters]
         Env().run(" ".join(arguments))
 
 
 def do_deploy(cmd, args):
-    params = Params(cmd, args)
-    params.map("--v", 1, [], "Manually map a host folderpath to a folderpath inside this new environment")
-    params.map("--all-volumes", 0, None, "Deploy using all volumes, BUILD_VOLUMES and DEPLOY_VOLUMES")
+    p = Params(cmd, args)
+    p.map("--v", 1, [], "Manually map a host folderpath to a folderpath inside this new environment")
+    p.map("--all-volumes", 0, None, "Deploy using all volumes, BUILD_VOLUMES and DEPLOY_VOLUMES")
     
-    if params.run():
-        useAllVolumes = params.has("--all-volumes")
-        volumes = params.get_all("--v")
-        Env().deploy(volumes, useAllVolumes)
+    if p.run():
+        Env().deploy(p.every__v, p.__all_volumes)
 
 
 def do_rm(cmd, args):
-    params = Params(cmd, args)
-    if params.run():
+    p = Params(cmd, args)
+    if p.run():
         Env().rm_container()
 
 
 def do_rmi(cmd, args):
-    params = Params(cmd, args)
-    if params.run():
+    p = Params(cmd, args)
+    if p.run():
         Env().rm_image()
 
 
 def do_ls(cmd, args):
-    params = Params(cmd, args)
-    if params.run():
+    p = Params(cmd, args)
+    if p.run():
         Env().ls_containers()
 
 
 def do_lsi(cmd, args):
-    params = Params(cmd, args)
-    if params.run():
+    p = Params(cmd, args)
+    if p.run():
         Env().ls_images()
 
 
 def do_lsc(cmd, args):
-    params = Params(cmd, args)
-    if params.run():
+    p = Params(cmd, args)
+    if p.run():
         Env().ls_commits()
 
 
 def do_ip(cmd, args):
-    params = Params(cmd, args)
-    if params.run():
+    p = Params(cmd, args)
+    if p.run():
         print(Env().ip())
 
 
 def do_get(cmd, args):
-    params = Params(cmd, args)
-    params.map("src", 1, None, "Source folder inside the environment", mandatory=True)
-    params.map("dst", 1, None, "Destination folder inside the host", mandatory=True)
+    p = Params(cmd, args)
+    p.map("src", 1, None, "Source folder inside the environment", mandatory=True)
+    p.map("dst", 1, None, "Destination folder inside the host", mandatory=True)
     
-    if params.run():
-        print(Env().get(params.get("src"), params.get("dst")))
+    if p.run():
+        print(Env().get(p.src, p.dst))
 
 
 def do_send(cmd, args):
-    params = Params(cmd, args)
-    params.map("src", 1, None, "Source folder inside the host", mandatory=True)
-    params.map("dst", 1, None, "Destination folder inside the environment", mandatory=True)
+    p = Params(cmd, args)
+    p.map("src", 1, None, "Source folder inside the host", mandatory=True)
+    p.map("dst", 1, None, "Destination folder inside the environment", mandatory=True)
     
-    if params.run():
-        print(Env().send(params.get("src"), params.get("dst")))
+    if p.run():
+        print(Env().send(p.src, p.dst))
 
 
 def main(cmd, args):
