@@ -12,16 +12,24 @@ import os
 
 
 def use(cmd, args):
+    desc1 = "Name or path of environment file"
+    desc2 = "Name or path of cluster file"
+    desc3 = "Handle only machines with this remote architecture"
+
     params = Params(cmd, args)
-    params.map("env", 1, None, "Name or path of environment file")
-    params.map("cluster", 1, None, "Name or path of cluster file")
-    params.map("--env", 1, None, "Name or path of environment file")
-    params.map("--cluster", 1, None, "Name or path of cluster file")
+    params.map("env", 1, None, desc1)
+    params.map("cluster", 1, None, desc2)
+    params.map("arch", 1, None, desc3)
+
+    params.map("--env", 1, None, desc1)
+    params.map("--cluster", 1, None, desc2)
+    params.map("--arch", 1, None, desc3)
     
     if params.run():
-        env = params.get("--env") if params.get("--env") else params.get("env")
-        cluster = params.get("--cluster") if params.get("--cluster") else params.get("cluster")
-        Context().use(env, cluster)
+        env = params.__env if params.has("--env") else params.env
+        cluster = params.__cluster if params.has("--cluster") else params.cluster
+        arch = params.__arch if params.has("--arch") else params.arch
+        Context().use(env, cluster, arch)
 
 def collect(cmd, args):
     from pywup.cmdtools.collect import main

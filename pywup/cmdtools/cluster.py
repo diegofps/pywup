@@ -13,63 +13,59 @@ import re
 
 
 def do_new(cmd, args):
-    params = Params(cmd, args)
-    params.map("clustername", 1, None, "Name of the cluster", mandatory=True)
-    params.map("quantity", 1, None, "Number of nodes in the cluster", mandatory=True)
-    params.map("outputfolder", 1, None, "Output folder to save the cluster file descriptor")
+    p = Params(cmd, args)
+    p.map("clustername", 1, None, "Name of the new cluster", mandatory=True)
+    p.map("quantity", 1, None, "Number of nodes in the new cluster", mandatory=True)
+    p.map("outputfolder", 1, ".", "Output folder to save the cluster file descriptor")
     
-    if params.run():
-        outfolder = params.get("outputfolder") if params.has("outputfolder") else "."
-        clustername = params.get("clustername")
-        qtt = int(params.get("quantity"))
-
-        Cluster().new(clustername, qtt, outfolder)
+    if p.run():
+        Cluster().new(p.clustername, p.quantity, p.outputfolder)
 
 
 def do_rm(cmd, args):
-    params = Params(cmd, args)
-    if params.run():
+    p = Params(cmd, args)
+    if p.run():
         Cluster().rm()
 
 
 def do_start(cmd, args):
-    params = Params(cmd, args)
-    if params.run():
+    p = Params(cmd, args)
+    if p.run():
         Cluster().start()
 
 
 def do_stop(cmd, args):
-    params = Params(cmd, args)
-    if params.run():
+    p = Params(cmd, args)
+    if p.run():
         Cluster().stop()
 
 
 def do_open(cmd, args):
-    params = Params(cmd, args)
-    params.map("nodenumber", 1, None, "Number of node to open", mandatory=True)
+    p = Params(cmd, args)
+    p.map("nodenumber", 1, None, "Number of node to open", mandatory=True)
 
-    if params.run():
-        node_number = params.get("nodenumber")
-        Cluster().open(node_number)
+    if p.run():
+        Cluster().open(p.nodenumber)
 
 
 def do_ls(cmd, args):
-    params = Params(cmd, args)
-    if params.run():
+    p = Params(cmd, args)
+    if p.run():
         Cluster().ls()
 
 
 def do_lsn(cmd, args):
-    params = Params(cmd, args)
-    if params.run():
+    p = Params(cmd, args)
+    if p.run():
         Cluster().lsn()
 
 
 def do_ip(cmd, args):
-    params = Params(cmd, args)
-    if params.run():
+    p = Params(cmd, args)
+    if p.run():
         for a, b in Cluster().ip():
             print(a, "=>", b)
+
 
 def main(cmd, args):
     r = Route(args, cmd)

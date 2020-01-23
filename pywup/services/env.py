@@ -97,9 +97,8 @@ class Env(Context):
             print(*x)
 
 
-    def export(self, tag = None):
-        filepath = get_export_filepath(self.name, tag)
-
+    def export(self, tag=None, arch=None):
+        filepath = get_export_filepath(self.name, tag=tag, arch=arch)
         print("Exporting commit image for " + colors.YELLOW + self.img_name + colors.RESET + " as " + colors.YELLOW + filepath + colors.RESET)
         docker.export_image(self.img_name, filepath)
 

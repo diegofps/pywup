@@ -4,11 +4,16 @@ from pywup.services import conf
 import os
 
 
-def get_export_filepath(name, tag):
-    if tag:
-        return "wimg__" + name + "." + tag + ".gz"
-    else:
-        return "wimg__" + name + ".gz"
+def get_export_filepath(name, tag=None, arch=None):
+    if tag is None:
+        from datetime import datetime
+        n = datetime.now()
+        tag = "%04d%02d%02d-%02d%02d" % (n.year, n.month, n.day, n.hour, n.minute)
+    
+    if arch is None:
+        arch = "generic"
+
+    return ".".join([name, arch, tag, "gz"])
 
 
 def get_container_name(tag, clustername=None, i=None):
@@ -69,9 +74,11 @@ def lookup_env(name):
 def update_state():
     env_name = conf.get("wup.env_name", scope="global", failOnMiss=False)
     cluster_name = conf.get("wup.cluster_name", scope="global", failOnMiss=False)
-    state = (env_name if env_name else "-") + "@" + (cluster_name if cluster_name else "-")
-    folderpath = os.path.expanduser("~/.wup")
+    arch = conf.get("wup.arch", scope="global", failOnMiss=False)
     
+    state = (env_name if env_name else "-") + "@" + (cluster_name if cluster_name else "-") + "@" + (arch if arch else "-")
+    
+    folderpath = os.path.expanduser("~/.wup")
     os.makedirs(folderpath, exist_ok=True)
 
     with open(os.path.join(folderpath, "state"), "w") as fout:

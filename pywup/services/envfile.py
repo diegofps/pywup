@@ -92,7 +92,6 @@ class EnvFile:
         self.workdir = "/"
         self.run = "ls"
         self.map_ports = []
-        #self.volumes = []
         self.build_volumes = []
         self.deploy_volumes = []
         self.expose = []
