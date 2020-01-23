@@ -161,7 +161,7 @@ def build_with_commits(cont_name, img_name, e, fromCommit=None, extra_volumes=[]
 
     rm_container("tmp")
     run(createCmd, write=e.bashrc)
-    start_container("tmp", e)
+    start_container("tmp", e, skip_start=True)
 
     for i in range(restore_point, len(e.commits)):
         c = e.commits[i]
@@ -288,19 +288,23 @@ def exists_image(img_name):
     return len(rows) >= 2
 
 
-def start_container(cont_name, e, attach=False):
+def start_container(cont_name, e, attach=False, skip_start=False):
     if type(cont_name) is list:
         for n in cont_name:
             start_container(n, e, attach)
         return
     
     if is_container_running(cont_name):
+        #print("Container is running, skipping", cont_name)
         return
     
+    print("Starting container", cont_name)
     run("docker start " + cont_name + " > /dev/null")
 
-    cmds = e.start + ["sleep 1\n"]
-    exec(cont_name, e.bashrc, cmds, attach)
+    if not skip_start:
+        print("Running start script for", cont_name)
+        cmds = e.start + ["sleep 1\n"]
+        exec(cont_name, e.bashrc, cmds, attach)
 
 
 def launch(cont_name, e, attach=False):

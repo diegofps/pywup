@@ -61,7 +61,7 @@ class Cluster(Context):
 
     def start(self):
         self.require(env=True, cluster=True)
-        docker.start_container(self.cluster_nodes, self.e)
+        docker.start_container(self.cluster_nodes, self.e, attach=True)
 
 
     def stop(self):
