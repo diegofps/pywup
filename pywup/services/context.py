@@ -58,10 +58,12 @@ class Context:
     def use(self, env, cluster):
         if env is not None:
             env_name, env_filepath = lookup_env(env)
+            print("Found", env_name, "at", env_filepath)
             self.set_env(env_name, env_filepath)
 
         if cluster is not None:
             cluster_name, cluster_filepath = lookup_cluster(cluster)
+            print("Found", cluster_name, "at", cluster_filepath)
             self.set_cluster(cluster_name, cluster_filepath)
 
         update_state()
