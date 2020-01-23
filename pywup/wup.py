@@ -2,6 +2,7 @@
 
 from pywup.services.general import lookup_env, lookup_cluster, update_state
 from pywup.services.system import abort, error, WupError, Route, Params
+from pywup.consts import version as wup_version
 from pywup.services.context import Context
 from pywup.services import conf
 
@@ -67,6 +68,8 @@ def cluster(cmd, args):
     from pywup.cmdtools.cluster import main
     main(cmd, args)
 
+def version(cmd, args):
+    print(wup_version)
 
 def wup(*params):
     r = Route(sys.argv[1:], "wup")
@@ -76,11 +79,12 @@ def wup(*params):
     r.map("heatmap", heatmap, "Plot a heatmap image using the data collected (requires matplotlib)")
     r.map("bars", bars, "Plot bars image using the data collected (requires matplotlib)")
     r.map("backup", backup, "Backup system files into a folder synced to a cloud")
-    r.map("q", q, "Run SQL in CSV files (Requires python-q)")
+    r.map("q", q, "Run SQL in CSV files (Requires python-q-text-as-data)")
     r.map("conf", config, "Set/Get wup configuration parameters")
     r.map("env", env, "Manage docker environments for development and cluster deploy (wup style)")
     r.map("remote", remote, "Manager remote environments basedo on wup environments")
     r.map("cluster", cluster, "Simulate a cluster using docker containers")
+    r.map("version", version, "Show current wup version")
     
     r.run(handleError=True)
 

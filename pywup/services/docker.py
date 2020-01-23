@@ -24,16 +24,18 @@ def init_and_run(cont_name, bash_init, cmd, attach=False):
         return run("docker exec " + cont_name + " bash -c " + k)
 
 
-def clean_volumes(volumes, allow_missing=True):
+def clean_volumes(volumes):
     volumes = [j.strip() for j in volumes]
     volumes = [j.split(":") for j in volumes if j]
 
     for v in volumes:
         if len(v) != 2:
-            error("The only valid sintaxes for volumes are <SourcePath>:<DestinationPath> and :<DestinationPath>")
+            error("The only valid sintaxes for volumes are:\n\n    <SourcePath>:<DestinationPath>\n    :<DestinationPath>\n    <SourcePath>:")
 
-    volumes = [[expand_path(a), expand_path(b)] for a, b in volumes]
-    
+    return [[expand_path(a), expand_path(b)] for a, b in volumes]
+
+
+def validate_volumes(volumes, allow_missing=True):
     for src, dst in volumes:
         if src:
             if not os.path.exists(src):
@@ -42,28 +44,27 @@ def clean_volumes(volumes, allow_missing=True):
             if not os.path.isdir(src):
                 error("Source volume in host is not a directory:", src)
         
-        elif not allow_missing:
-            error("Must provide the source directory in", src + ":" + dst)
+        else:
+            error("Use --v to specify a source directory for destination:", dst)
 
         if not dst:
             error("Invalid destination directory:", dst)
     
-    return volumes
 
-
-def parse_volumes(volumes, extra_volumes):
-    volumes = clean_volumes(volumes, True)
-    extra_volumes = clean_volumes(extra_volumes, False)
-
+def expand_volumes(volumes, extra_volumes):
     extra_volumes_map = {v[1]:v[0] for v in extra_volumes}
 
     for v in volumes:
         if v[1] in extra_volumes_map:
             v[0] = extra_volumes_map[v[1]]
+
+
+def parse_volumes(volumes, extra_volumes):
+    volumes = clean_volumes(volumes)
+    extra_volumes = clean_volumes(extra_volumes)
     
-    for v in volumes:
-        if not v[0]:
-            error("Use --v to specify a source directory for destination:", v[1])
+    expand_volumes(volumes, extra_volumes)
+    validate_volumes(volumes)
 
     return [v[0] + ":" + v[1] for v in volumes]
 
@@ -270,6 +271,9 @@ def get_container_ip(cont_name):
 
 
 def is_container_running(cont_name):
+    if type(cont_name) is list:
+        return [is_container_running(x) for x in cont_name]
+
     cmd = "docker inspect -f '{{.State.Running}}' " + cont_name
     status, rows = run(cmd, read=True)
 

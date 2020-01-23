@@ -31,12 +31,13 @@ def lookup_cluster(name):
     if name == "-":
         return "-", ""
     
-    if not os.path.exists(name):
-        filepath = "./" + name + ".cluster"
-        if not os.path.exists(filepath):
+    candidate = expand_path(name)
+
+    if not os.path.exists(candidate):
+        candidate = expand_path("./" + name + ".cluster")
+        if not os.path.exists(candidate):
             error("Could not find a cluster definition for:", name)
     else:
-        filepath = name
         name = os.path.splitext(os.path.basename(name))[0]
     
     if "__" in name:
@@ -45,7 +46,7 @@ def lookup_cluster(name):
     if name == "temp":
         error("You cannot use a cluster named temp")
     
-    return name, filepath
+    return name, candidate
 
 
 def lookup_env(name):
@@ -75,9 +76,15 @@ def lookup_env(name):
 def update_state():
     env_name = conf.get("wup.env_name", scope="global", failOnMiss=False)
     cluster_name = conf.get("wup.cluster_name", scope="global", failOnMiss=False)
+    cluster_env = conf.get("wup.cluster_env", scope="global", failOnMiss=False)
     arch = conf.get("wup.arch", scope="global", failOnMiss=False)
-    
-    state = (env_name if env_name else "-") + "@" + (cluster_name if cluster_name else "-") + "@" + (arch if arch else "-")
+
+    env_name = env_name if env_name else "-"
+    cluster_name = cluster_name if cluster_name else "-"
+    cluster_env = cluster_env if cluster_env else "-"
+    arch = arch if arch else "-"
+
+    state = env_name + "," + cluster_env + "@" + cluster_name + "." + arch
     
     folderpath = os.path.expanduser("~/.wup")
     os.makedirs(folderpath, exist_ok=True)

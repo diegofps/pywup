@@ -66,6 +66,17 @@ def do_ip(cmd, args):
         for a, b in Cluster().ip():
             print(a, "=>", b)
 
+def do_status(cmd, args):
+    p = Params(cmd, args)
+    if p.run():
+        status = Cluster().status()
+
+        lengths = [max([len(x) for x in array]) for array in status]
+
+        for tup in zip(*status):
+            cells = [x + " " * (lengths[i]-len(x)) for i, x in enumerate(tup)]
+            print("    ".join(cells))
+
 
 def main(cmd, args):
     r = Route(args, cmd)
@@ -78,5 +89,6 @@ def main(cmd, args):
     r.map("ls", do_ls, "Lists all clusters")
     r.map("lsn", do_lsn, "Lists all nodes in the cluster")
     r.map("ip", do_ip, "Show the IP address of each node in the cluster")
+    r.map("status", do_status, "Display info about the nodes: name, ip and running")
     
     r.run()

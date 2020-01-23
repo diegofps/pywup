@@ -1,14 +1,16 @@
+import pywup.consts as c
+
 import setuptools
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="pywup",
-    version="0.0.32",
-    author="Diego Souza",
-    author_email="contact@wespa.com.br",
-    description="A small set of tools",
+    name=c.name,
+    version=c.version,
+    author=c.author,
+    author_email=c.author_email,
+    description=c.description,
     long_description=long_description,
     long_description_content_type="text/markdown",
         url="https://github.com/diegofps/pywup",
@@ -19,9 +21,14 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     entry_points = {
-        'console_scripts': ['wup=pywup.wup:wup'],
+        'console_scripts': [
+            'wup = pywup.wup:wup'
+        ],
     },
     install_requires=[
         'colorcet', 'tqdm', 'PyYAML'
-    ]
+    ],
+    extras_require={
+        "full": ['numpy', 'matplotlib']
+    }
 )

@@ -1,12 +1,10 @@
-from pywup.services.general import lookup_cluster, lookup_env, get_image_name, get_container_name, update_state
-from pywup.services.system import error, abort, run, colors
+from pywup.services.general import lookup_cluster, lookup_env, get_container_name, update_state
+from pywup.services.system import error, run, colors
 from multiprocessing import Pool, cpu_count
 from pywup.services.context import Context
 from pywup.services import docker
 
-import tqdm
 import yaml
-import re
 import os
 
 
@@ -23,30 +21,47 @@ class Cluster(Context):
             error("You must COMMIT the image first")
 
         if self.cluster_nodes:
-            error("A cluster with this name already exist, remove it first")
+            error("A cluster with this name already exists, remove it first")
 
         nodes = [get_container_name(self.name, clustername, i) for i in range(qtt)]
 
-        for cont_name in nodes:
-            docker.deploy(self.img_name, cont_name, self.e)
+        for container in nodes:
+            docker.deploy(self.img_name, container, self.e)
         
         data = {
-            "local_arch": {
-                cont_name : {
-                    "tags": ["fakecluster"],
-                    "host": "unknown",
-                    "user": "unknown",
-                    "procs": 1
-                } for cont_name in nodes
+            "env": self.name,
+            "env_filepath": self.filepath,
+            "cluster_name": clustername,
+            "archs": {
+                "local_arch": {
+                    container : {
+                        "tags": ["fakecluster"],
+                        "user": "wup",
+                        "procs": 1
+                    } for container in nodes
+                }
             }
         }
 
-        outfile = os.path.join(outfolder, clustername + ".cluster")
-        with open(outfile, "w") as fout:
+        c = ClusterFile()
+        c.env = self.name
+        c.env_filepath = self.filepath
+        c.cluster = clustername
+        c.cluster_filepath = os.path.join(outfolder, clustername + ".cluster")
+
+        arch = c.create_arch("generic")
+
+        for container in nodes:
+            m = arch.create_machine(container)
+            m.add_tag("fakecluster")
+            m.user = "wup"
+            m.procs = 1
+
+        with open(c.cluster_filepath, "w") as fout:
             yaml.dump(data, fout)
         
-        self.set_cluster(clustername, outfile)
-        print("Cluster file written to " + colors.YELLOW + outfile + colors.RESET)
+        self.set_cluster(clustername, outfile, self.name, self.filepath)
+        print("Cluster file written to", colors.yellow(outfile))
 
         update_state()
     
@@ -55,7 +70,7 @@ class Cluster(Context):
         self.require(cluster=True)
         docker.rm_container(self.cluster_nodes)
 
-        self.set_cluster("-", "")
+        self.set_cluster("-", "", "-", "")
         update_state()
     
 
@@ -67,6 +82,16 @@ class Cluster(Context):
     def stop(self):
         self.require(cluster=True)
         docker.stop(self.cluster_nodes)
+
+
+    def status(self):
+        self.require(cluster=True)
+
+        names = ["NAME"] + self.cluster_nodes
+        ips = ["IP"] + [x[1] for x in docker.get_container_ip(self.cluster_nodes)]
+        running = ["RUNNING"] + [str(x) for x in docker.is_container_running(self.cluster_nodes)]
+
+        return [names, ips, running]
 
 
     def ip(self):

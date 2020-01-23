@@ -43,7 +43,10 @@ class colors:
     @staticmethod
     def white(str):
         return colors.WHITE + str + colors.RESET
-    
+
+
+def filename(filepath):
+    return os.path.splitext(os.path.basename(filepath))[0]
 
 
 def expand_path(filepath):
@@ -72,6 +75,10 @@ def wprint(*args):
 
 def gprint(*args):
     print(colors.GREEN + " ".join(args) + colors.RESET)
+
+
+def rprint(*args):
+    print(colors.RED + " ".join(args) + colors.RESET)
 
 
 def quote(str):

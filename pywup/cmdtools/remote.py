@@ -4,21 +4,24 @@ from pywup.services.remote import Remote
 
 def sync_build(cmd, args):
     p = Params(cmd, args)
-    p.map("--clear", 0, None, "Deletes all volumes associated to this env stored in the build machines")
-    p.map("--v", 1, None, "Sends a volume to all build machines")
+
+    p.map("--clear", 0, None, "Deletes all volumes associated to this env stored in the build machines prior to sending anything")
+    p.map("--v", 1, None, "Sends a custom volume/directory to all build machines")
     p.map("--env", 0, None, "Sends the environment file to the build machines")
-    p.map("--all", 0, None, "Sends the environment file and all directories references by its BUILD_VOLUMES")
+    p.map("--all-build", 0, None, "Sends all build volumes defined in the environment file")
+    p.map("--all-deploy", 0, None, "Sends all deploy volumes defined in the environment file")
 
     if p.run():
-        Remote().sync_build(p.__clear, p.every__dir, p.__env, p.__all)
+        Remote().sync_build(p.__clear, p.every__v, p.__env, p.__all_build, p.__all_deploy)
 
 
 def sync_deploy(cmd, args):
     p = Params(cmd, args)
     p.map("--clear", 0, None, "Deletes all volumes associated to this env stored in the deploy machines")
-    p.map("--v", 1, None, "Sends a volume to all deploy machines")
+    p.map("--v", 1, None, "Sends a custom volume/directory to all deploy machines")
     p.map("--env", 0, None, "Sends the environment file to the deploy machines")
-    p.map("--all", 0, None, "Sends the environment file and all directories references by its DEPLOY_VOLUMES")
+    p.map("--all-build", 0, None, "Sends all build volumes defined in the environment file")
+    p.map("--all-deploy", 0, None, "Sends all deploy volumes defined in the environment file")
     p.map("--image", 0, None, "Sends trhe build image file to all deploy machines, respecting their archs")
 
     if p.run():
