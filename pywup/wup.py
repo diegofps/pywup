@@ -59,8 +59,8 @@ def env(cmd, args):
     from pywup.cmdtools.env import main
     main(cmd, args)
 
-def renv(cmd, args):
-    from pywup.cmdtools.renv import main
+def remote(cmd, args):
+    from pywup.cmdtools.remote import main
     main(cmd, args)
 
 def cluster(cmd, args):
@@ -73,13 +73,13 @@ def wup(*params):
 
     r.map("use", use, "Set env and/or cluster files")
     r.map("collect", collect, "Run an app multiple times, variating its parameters and collecting its output attributes")
-    r.map("heatmap", heatmap, "Plot a heatmap image using the data collected")
-    r.map("bars", bars, "Plot a bars image using the data collected")
+    r.map("heatmap", heatmap, "Plot a heatmap image using the data collected (requires matplotlib)")
+    r.map("bars", bars, "Plot bars image using the data collected (requires matplotlib)")
     r.map("backup", backup, "Backup system files into a folder synced to a cloud")
     r.map("q", q, "Run SQL in CSV files (Requires python-q)")
     r.map("conf", config, "Set/Get wup configuration parameters")
     r.map("env", env, "Manage docker environments for development and cluster deploy (wup style)")
-    r.map("remote", renv, "Manager remote environments basedo on wup environments")
+    r.map("remote", remote, "Manager remote environments basedo on wup environments")
     r.map("cluster", cluster, "Simulate a cluster using docker containers")
     
     r.run(handleError=True)

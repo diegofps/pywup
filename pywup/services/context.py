@@ -58,15 +58,16 @@ class Context:
     def use(self, env, cluster, arch):
         if env is not None:
             env_name, env_filepath = lookup_env(env)
-            print("Found", env_name, "at", env_filepath)
+            print("Using environment", env_name, "found at", env_filepath)
             self.set_env(env_name, env_filepath)
 
         if cluster is not None:
             cluster_name, cluster_filepath = lookup_cluster(cluster)
-            print("Found", cluster_name, "at", cluster_filepath)
+            print("Using cluster", cluster_name, "found at", cluster_filepath)
             self.set_cluster(cluster_name, cluster_filepath)
 
         if arch is not None:
+            print("Using arch", arch)
             self.set_arch(arch)
 
         update_state()
