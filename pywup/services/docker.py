@@ -208,10 +208,14 @@ def rm_container(cont_name):
 
 
 def rm_image(img_name):
+    if img_name is None:
+        return
+    
     if type(img_name) is list:
         img_name = " ".join(img_name)
     
-    run("docker rmi -f " + img_name + "", suppressError=True)
+    if img_name.strip():
+        run("docker rmi -f " + img_name, suppressError=True)
 
 
 def stop(cont_name):

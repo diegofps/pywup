@@ -1,5 +1,5 @@
 from pywup.services.general import get_image_name, get_container_name, lookup_env, lookup_cluster, update_state, get_export_filepath
-from pywup.services.system import error, run, abort, WupError, expand_path
+from pywup.services.system import error, run, abort, WupError, expand_path, colors
 from pywup.services.envfile import EnvFile
 from pywup.services import conf
 
@@ -58,12 +58,12 @@ class Context:
     def use(self, env, cluster, arch):
         if env is not None:
             env_name, env_filepath = lookup_env(env)
-            print("Using environment", env_name, "found at", env_filepath)
+            print("Using environment", colors.yellow(env_name), "found at", colors.yellow(env_filepath))
             self.set_env(env_name, env_filepath)
 
         if cluster is not None:
             cluster_name, cluster_filepath = lookup_cluster(cluster)
-            print("Using cluster", cluster_name, "found at", cluster_filepath)
+            print("Using cluster", colors.yellow(cluster_name), "found at", colors.yellow(cluster_filepath))
             self.set_cluster(cluster_name, cluster_filepath)
 
         if arch is not None:

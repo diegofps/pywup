@@ -19,7 +19,7 @@ def do_new(cmd, args):
     p.map("outputfolder", 1, ".", "Output folder to save the cluster file descriptor")
     
     if p.run():
-        Cluster().new(p.clustername, p.quantity, p.outputfolder)
+        Cluster().new(p.clustername, int(p.quantity), p.outputfolder)
 
 
 def do_rm(cmd, args):

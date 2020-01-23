@@ -16,6 +16,35 @@ class colors:
     CYAN="\033[1;36m"
     WHITE="\033[1;37m"
 
+    @staticmethod
+    def yellow(str):
+        return colors.YELLOW + str + colors.RESET
+    
+    @staticmethod
+    def red(str):
+        return colors.RED + str + colors.RESET
+    
+    @staticmethod
+    def green(str):
+        return colors.GREEN + str + colors.RESET
+    
+    @staticmethod
+    def blue(str):
+        return colors.BLUE + str + colors.RESET
+    
+    @staticmethod
+    def purple(str):
+        return colors.PURPLE + str + colors.RESET
+    
+    @staticmethod
+    def cyan(str):
+        return colors.CYAN + str + colors.RESET
+    
+    @staticmethod
+    def white(str):
+        return colors.WHITE + str + colors.RESET
+    
+
 
 def expand_path(filepath):
     if not filepath:

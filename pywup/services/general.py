@@ -1,4 +1,4 @@
-from pywup.services.system import error
+from pywup.services.system import error, expand_path
 from pywup.services import conf
 
 import os
@@ -52,23 +52,24 @@ def lookup_env(name):
     if name == "-":
         return "-", ""
 
-    if not os.path.exists(name):
-        filepath = "./" + name + ".env"
-        if not os.path.exists(filepath):
-            filepath = "~/.wup/projects/" + name + "/" + name + ".env"
-            if not os.path.exists(filepath):
+    candidate = expand_path(name)
+
+    if not os.path.exists(candidate):
+        candidate = expand_path("./" + name + ".env")
+        if not os.path.exists(candidate):
+            candidate = expand_path("~/.wup/projects/" + name + "/" + name + ".env")
+            if not os.path.exists(candidate):
                 error("Could not find an env declaration for:", name)
     else:
-        filepath = name
         name = os.path.splitext(os.path.basename(name))[0]
     
     if "__" in name:
         error("Names must not contain two consecutive underscores (__)")
 
     if name == "temp":
-        error("You cannot use a container named temp")
+        error("You cannot use an env named temp")
     
-    return name, filepath
+    return name, candidate
 
 
 def update_state():
