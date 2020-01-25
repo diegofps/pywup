@@ -1,7 +1,5 @@
-from pywup.services.general import get_image_name, get_container_name, lookup_env, update_state, get_export_filepath
 from pywup.services.system import error, abort, WupError, run, Args, Route, quote, Params
 from pywup.services.env import Env
-from pywup.services import conf
 
 import sys
 import os
@@ -64,7 +62,7 @@ def do_export(cmd, args):
     p.map("--arch", 1, None, "Replaces the architecture name in the output file. Default name is generic")
     
     if p.run():
-        Env().export(tag=p.__tag, arch=p.__arch)
+        Env().export(version=p.__tag, arch=p.__arch)
 
 
 def do_import(cmd, args):

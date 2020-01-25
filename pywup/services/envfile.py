@@ -72,13 +72,39 @@ class EnvNode:
 
 class EnvFile:
 
-    def __init__(self, env=None, filepath=None):
-        self.init_default()
-        if filepath is not None and env is not None:
-            self.init_from_envfile(env, filepath)
+    def __init__(self, name=None, filepath=None):
+        self.init_default(name, filepath)
+        
+        if filepath is not None and name is not None:
+            self.init_from_envfile(name, filepath)
     
 
-    def init_default(self):
+    @property
+    def image_name(self):
+        return "wimg:" + self.name
+
+
+    @property
+    def container_name(self):
+        return "wcont__" + self.name
+
+
+    def export_filepath(self, version=None, arch=None):
+        if version is None:
+            from datetime import datetime
+            n = datetime.now()
+            version = "%04d%02d%02d-%02d%02d" % (n.year, n.month, n.day, n.hour, n.minute)
+        
+        if arch is None:
+            arch = "generic"
+
+        return ".".join([self.name, arch, version, "gz"])
+
+
+    def init_default(self, name, filepath):
+        self.name = name
+        self.filepath = filepath
+
         self.start = []
         self.open = []
         self.build = []

@@ -1,11 +1,13 @@
-from pywup.services.general import lookup_cluster, lookup_env, get_container_name, update_state
-from pywup.services.system import error, run, colors
-from multiprocessing import Pool, cpu_count
+from pywup.services.system import error, colors, expand_path
+from pywup.services.clusterfile import ClusterFile
 from pywup.services.context import Context
 from pywup.services import docker
 
+from multiprocessing import Pool, cpu_count
+
 import yaml
 import os
+import re
 
 
 class Cluster(Context):
@@ -15,40 +17,22 @@ class Cluster(Context):
 
 
     def new(self, clustername, qtt, outfolder):
-        self.require(env=True)
+        env = self.envfile
+        
+        c = ClusterFile()
+        c.name = clustername
+        c.docker_based = True
+        c.filepath = expand_path(os.path.join(outfolder, clustername + ".cluster"))
+        c.env = env
 
-        if not docker.exists_image(self.img_name):
+        if not docker.exists_image(env.image_name):
             error("You must COMMIT the image first")
 
-        if self.cluster_nodes:
-            error("A cluster with this name already exists, remove it first")
-
-        nodes = [get_container_name(self.name, clustername, i) for i in range(qtt)]
+        nodes = [c.container_name(i) for i in range(qtt)]
 
         for container in nodes:
-            docker.deploy(self.img_name, container, self.e)
+            docker.deploy(env.image_name, container, env)
         
-        data = {
-            "env": self.name,
-            "env_filepath": self.filepath,
-            "cluster_name": clustername,
-            "archs": {
-                "local_arch": {
-                    container : {
-                        "tags": ["fakecluster"],
-                        "user": "wup",
-                        "procs": 1
-                    } for container in nodes
-                }
-            }
-        }
-
-        c = ClusterFile()
-        c.env = self.name
-        c.env_filepath = self.filepath
-        c.cluster = clustername
-        c.cluster_filepath = os.path.join(outfolder, clustername + ".cluster")
-
         arch = c.create_arch("generic")
 
         for container in nodes:
@@ -57,52 +41,58 @@ class Cluster(Context):
             m.user = "wup"
             m.procs = 1
 
-        with open(c.cluster_filepath, "w") as fout:
-            yaml.dump(data, fout)
+        c.export(c.filepath)
         
-        self.set_cluster(clustername, outfile, self.name, self.filepath)
-        print("Cluster file written to", colors.yellow(outfile))
+        self.pref.cluster_name = c.name
+        self.pref.cluster_filepath = c.filepath
+        self.pref.cluster_env_name = c.env.name
+        self.pref.cluster_env_filepath = c.env.filepath
+        self.pref.save()
 
-        update_state()
+        self.pref.update_state()
+
+        print("Cluster file written to", colors.yellow(c.filepath))
     
 
     def rm(self):
-        self.require(cluster=True)
-        docker.rm_container(self.cluster_nodes)
+        cluster = self.clusterfile
+        docker.rm_container(cluster.docker_nodes)
 
-        self.set_cluster("-", "", "-", "")
-        update_state()
+        self.pref.cluster_name = None
+        self.pref.cluster_filepath = None
+        self.pref.cluster_env_name = None
+        self.pref.cluster_env_filepath = None
+        self.pref.save()
+
+        self.pref.update_state()
     
 
     def start(self):
-        self.require(env=True, cluster=True)
-        docker.start_container(self.cluster_nodes, self.e, attach=True)
+        cluster = self.clusterfile
+        docker.start_container(cluster.docker_nodes, cluster.env, attach=True)
 
 
     def stop(self):
-        self.require(cluster=True)
-        docker.stop(self.cluster_nodes)
+        docker.stop(self.clusterfile.docker_nodes)
 
 
     def status(self):
-        self.require(cluster=True)
+        nodes = self.clusterfile.docker_nodes
 
-        names = ["NAME"] + self.cluster_nodes
-        ips = ["IP"] + [x[1] for x in docker.get_container_ip(self.cluster_nodes)]
-        running = ["RUNNING"] + [str(x) for x in docker.is_container_running(self.cluster_nodes)]
+        names = ["NAME"] + nodes
+        ips = ["IP"] + [x[1] for x in docker.get_container_ip(nodes)]
+        running = ["RUNNING"] + [str(x) for x in docker.is_container_running(nodes)]
 
         return [names, ips, running]
 
 
     def ip(self):
-        self.require(cluster=True)
-        return docker.get_container_ip(self.cluster_nodes)
+        return docker.get_container_ip(self.clusterfile.docker_nodes)
 
 
     def open(self, node_number):
-        self.require(env=True, cluster=True)
-        cont_name = get_container_name(self.name, self.cluster, node_number)
-        docker.init_and_open(cont_name, self.e.bashrc)
+        cluster = self.clusterfile
+        docker.init_and_open(cluster.container_name(node_number), cluster.env.bashrc)
     
 
     def ls(self):
@@ -110,5 +100,5 @@ class Cluster(Context):
 
 
     def lsn(self):
-        self.require(cluster=True)
-        docker.ls_cluster_nodes(self.cluster)
+        docker.ls_cluster_nodes(self.clusterfile.name)
+

@@ -1,7 +1,6 @@
 from multiprocessing import Pool, cpu_count
 
 from pywup.services.system import abort, error, WupError, Args, run, Route, Params
-from pywup.services.general import lookup_env, get_image_name, get_container_name
 from pywup.services.cluster import Cluster
 
 import shlex
@@ -88,7 +87,7 @@ def main(cmd, args):
     r.map("open", do_open, "Opens one of the cluster nodes")
     r.map("ls", do_ls, "Lists all clusters")
     r.map("lsn", do_lsn, "Lists all nodes in the cluster")
-    r.map("ip", do_ip, "Show the IP address of each node in the cluster")
+    #r.map("ip", do_ip, "Show the IP address of each node in the cluster")
     r.map("status", do_status, "Display info about the nodes: name, ip and running")
     
     r.run()
