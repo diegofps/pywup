@@ -15,7 +15,6 @@ class Context:
         self.__envfile = None
 
 
-    @property
     def envfile(self):
         if self.__envfile is None:
             env_name = self.pref.env_name
@@ -29,8 +28,11 @@ class Context:
         return self.__envfile
 
 
-    @property
-    def clusterfile(self):
+    def docker_clusterfile(self):
+        return self.clusterfile(docker=True)
+    
+    
+    def clusterfile(self, docker=False):
         if self.__clusterfile is None:
             filepath = self.pref.cluster_filepath
 
@@ -38,6 +40,9 @@ class Context:
                 error("You must select a cluster file first: wup use --c <CLUSTER_NAME_OR_PATH>")
             
             self.__clusterfile = ClusterFile(filepath)
-        
+
+            if docker and not self.__clusterfile.docker_based:
+                error("This is not a docker cluster")
+            
         return self.__clusterfile
     

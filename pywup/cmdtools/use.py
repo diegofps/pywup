@@ -36,7 +36,6 @@ def main(cmd, args):
             pref.arch_name = arch
         
         pref.save()
-        pref.update_state()
 
         if params.__show:
             show = lambda a,b: print(colors.white(a), colors.green(b) if b else colors.red("None"))

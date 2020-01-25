@@ -1,4 +1,4 @@
-from pywup.services.system import error, expand_path
+from pywup.services.system import error, expand_path, colors
 from pywup.services.clusterfile import ClusterFile
 
 import yaml
@@ -42,6 +42,8 @@ class Preferences:
 
         with open(filepath, "w") as fout:
             yaml.dump(self.data, fout, default_flow_style=False)
+        
+        self.update_state()
 
 
     def lookup_cluster(self, name):
@@ -78,8 +80,6 @@ class Preferences:
             self.cluster_filepath = candidate
             self.cluster_env_name = None
             self.cluster_env_filepath = None
-
-        
 
 
     def lookup_env(self, name):
@@ -132,7 +132,14 @@ class Preferences:
         os.makedirs(folderpath, exist_ok=True)
 
         with open(os.path.join(folderpath, "state"), "w") as fout:
-            fout.write(state)
+            if not cluster_name:
+                fout.write(colors.purple(state))
+
+            elif cluster_env:
+                fout.write(colors.purple(state))
+
+            else:
+                fout.write(colors.cyan(state))
 
 
 class Getter:

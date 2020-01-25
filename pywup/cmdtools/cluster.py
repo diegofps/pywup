@@ -80,7 +80,7 @@ def do_status(cmd, args):
 def main(cmd, args):
     r = Route(args, cmd)
 
-    r.map("new", do_new, "Creates a new simulated cluster using an existing image")
+    r.map("new", do_new, "Creates a simulated cluster using an existing docker image on your local machine")
     r.map("rm", do_rm, "Removes an existing simulated cluster")
     r.map("start", do_start, "Starts all nodes in the current cluster")
     r.map("stop", do_stop, "Stops all nodes in the current cluster")

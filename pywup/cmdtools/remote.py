@@ -2,6 +2,15 @@ from pywup.services.system import Route, Params
 from pywup.services.remote import Remote
 
 
+def template(cmd, args):
+    p = Params(cmd, args)
+    p.map("clustername", 1, None, "Name of the new cluster", mandatory=True)
+    p.map("outputfolder", 1, ".", "Output folder to save the cluster file descriptor")
+
+    if p.run():
+        Remote().template(p.clustername, p.outputfolder)
+
+
 def sync_build(cmd, args):
     p = Params(cmd, args)
 
@@ -96,6 +105,7 @@ def run(cmd, args):
 def main(cmd, args):
     r = Route(args, cmd)
 
+    r.map("template", template, "Create an empty cluster file you can modify to represent a real cluster")
     r.map("sync-build", sync_build, "Syncs directories to build machines")
     r.map("sync-deploy", sync_deploy, "Syncs directories against the deploy machines")
     r.map("start", start, "Starts the container in the remote machines")

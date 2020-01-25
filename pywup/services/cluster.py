@@ -17,7 +17,7 @@ class Cluster(Context):
 
 
     def new(self, clustername, qtt, outfolder):
-        env = self.envfile
+        env = self.envfile()
         
         c = ClusterFile()
         c.name = clustername
@@ -47,13 +47,11 @@ class Cluster(Context):
         self.pref.cluster_env_filepath = c.env.filepath
         self.pref.save()
 
-        self.pref.update_state()
-
         print("Cluster file written to", colors.yellow(c.filepath))
-    
+
 
     def rm(self):
-        cluster = self.clusterfile
+        cluster = self.docker_clusterfile()
         docker.rm_container(cluster.docker_nodes)
 
         self.pref.cluster_name = None
@@ -62,20 +60,18 @@ class Cluster(Context):
         self.pref.cluster_env_filepath = None
         self.pref.save()
 
-        self.pref.update_state()
-    
 
     def start(self):
-        cluster = self.clusterfile
+        cluster = self.docker_clusterfile()
         docker.start_container(cluster.docker_nodes, cluster.env, attach=True)
 
 
     def stop(self):
-        docker.stop(self.clusterfile.docker_nodes)
+        docker.stop(self.docker_clusterfile().docker_nodes)
 
 
     def status(self):
-        nodes = self.clusterfile.docker_nodes
+        nodes = self.docker_clusterfile().docker_nodes
 
         names = ["NAME"] + nodes
         ips = ["IP"] + [x[1] for x in docker.get_container_ip(nodes)]
@@ -85,11 +81,11 @@ class Cluster(Context):
 
 
     def ip(self):
-        return docker.get_container_ip(self.clusterfile.docker_nodes)
+        return docker.get_container_ip(self.docker_clusterfile().docker_nodes)
 
 
     def open(self, node_number):
-        cluster = self.clusterfile
+        cluster = self.docker_clusterfile()
         docker.init_and_open(cluster.container_name(node_number), cluster.env.bashrc)
     
 
@@ -98,5 +94,5 @@ class Cluster(Context):
 
 
     def lsn(self):
-        docker.ls_cluster_nodes(self.clusterfile.name)
+        docker.ls_cluster_nodes(self.docker_clusterfile().name)
 

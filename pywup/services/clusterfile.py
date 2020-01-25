@@ -43,8 +43,8 @@ class ClusterFile:
         self.name = ""
         self.docker_based = False
         self.filepath = filepath
-        self.env_filepath = ""
-        self.env_name = ""
+        self.env_filepath = None
+        self.env_name = None
         self.archs = {}
         self.__env = None
 
