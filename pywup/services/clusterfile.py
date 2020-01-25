@@ -8,10 +8,15 @@ import re
 
 class Machine:
 
-    def __init__(self):
+    def __init__(self, y=None):
         self.tags = []
         self.procs = None
         self.user = None
+
+        if y is not None:
+            self.tags = y["tags"]
+            self.procs = y["procs"]
+            self.user = y["user"]
     
     def add_tag(self, name):
         self.tags.append(name)
@@ -20,25 +25,6 @@ class Machine:
     def dict(self):
         return copy.copy(self.__dict__)
 
-
-class Arch:
-
-    def __init__(self, data=None):
-        self.machines = {}
-    
-    def create_machine(self, key):
-        if not key in self.machines:
-            self.machines[key] = Machine()
-        return self.machines[key]
-
-    @property
-    def dict(self):
-        data = copy.copy(self.__dict__)
-        
-        items = data["machines"]
-        data["machines"] = { key:items[key].dict for key in items }
-
-        return data
 
 class ClusterFile:
 
@@ -81,25 +67,35 @@ class ClusterFile:
         data = copy.copy(self.__dict__)
         del data["_ClusterFile__env"]
 
-        items = data["archs"]
-        data["archs"] = { key:items[key].dict for key in items }
+        archs = data["archs"]
+
+        for arch_name in archs:
+            arch = archs[arch_name]
+            for machine_name in arch:
+                arch[machine_name] = arch[machine_name].dict
 
         return data
 
     def init_from_file(self, filepath):
         with open(filepath, "r") as fin:
-            data = yaml.load(fin, Loader=yaml.FullLoader)
+            y = yaml.load(fin, Loader=yaml.FullLoader)
         
-        self.name = data["name"]
-        self.docker_based = data["docker_based"]
+        self.name = y["name"]
+        self.docker_based = y["docker_based"]
         self.filepath = filepath
-        self.env_filepath = data["env_filepath"]
-        self.env_name = data["env_name"]
+        self.env_filepath = y["env_filepath"]
+        self.env_name = y["env_name"]
 
-        archs = data["archs"]
+        y_archs = y["archs"]
 
-        for key in archs:
-            self.archs[key] = Arch(archs[key])
+        for arch_name in y_archs:
+            arch = {}
+            self.archs[arch_name] = arch
+            y_machines = y_archs[arch_name]
+
+            for machine_name in y_machines:
+                y_machine = y_machines[machine_name]
+                arch[machine_name] = Machine(y_machine)
 
 
     def export(self, filepath):
@@ -107,10 +103,16 @@ class ClusterFile:
             yaml.dump(self.dict, fout, default_flow_style=False)
     
 
-    def create_arch(self, key):
-        if not key in self.archs:
-            self.archs[key] = Arch()
-        return self.archs[key]
+    def create_machine(self, arch_name, machine_name):
+        if not arch_name in self.archs:
+            self.archs[arch_name] = {}
+        
+        arch = self.archs[arch_name]
+
+        if not machine_name in arch:
+            arch[machine_name] = Machine()
+        
+        return arch[machine_name]
 
 
     @property

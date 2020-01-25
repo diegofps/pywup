@@ -31,16 +31,14 @@ class Cluster(Context):
         nodes = [c.container_name(i) for i in range(qtt)]
 
         for container in nodes:
-            docker.deploy(env.image_name, container, env)
-        
-        arch = c.create_arch("generic")
-
-        for container in nodes:
-            m = arch.create_machine(container)
+            m = c.create_machine("generic", container)
             m.add_tag("fakecluster")
             m.user = "wup"
             m.procs = 1
 
+        for container in nodes:
+            docker.deploy(env.image_name, container, env)
+        
         c.export(c.filepath)
         
         self.pref.cluster_name = c.name

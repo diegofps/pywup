@@ -18,13 +18,26 @@ class Context:
     @property
     def envfile(self):
         if self.__envfile is None:
-            self.__envfile = EnvFile(self.pref.env_name, self.pref.env_filepath)
+            env_name = self.pref.env_name
+            env_filepath = self.pref.env_filepath
+
+            if env_name is None or env_filepath is None:
+                error("You must select an env file first: wup use --e <ENV_NAME_OR_PATH>")
+            
+            self.__envfile = EnvFile(env_name, env_filepath)
+        
         return self.__envfile
 
 
     @property
     def clusterfile(self):
         if self.__clusterfile is None:
-            self.__clusterfile = ClusterFile(self.pref.cluster_filepath)
+            filepath = self.pref.cluster_filepath
+
+            if filepath is None:
+                error("You must select a cluster file first: wup use --c <CLUSTER_NAME_OR_PATH>")
+            
+            self.__clusterfile = ClusterFile(filepath)
+        
         return self.__clusterfile
     

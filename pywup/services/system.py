@@ -319,7 +319,7 @@ class Route:
                 r = self.cmds[name]
                 return r.cb(r, self.args)
 
-            elif name == "--help":
+            elif name == "--h":
                 return self.help()
             
             else:
@@ -327,7 +327,7 @@ class Route:
 
         except WupError as e:
             if handleError:
-                abort(colors.RED + "Error: "+ e.message + colors.RESET)
+                abort(colors.red("Error: "+ e.message))
             else:
                 raise e
     
@@ -476,7 +476,7 @@ class Params:
                     
                     item.set(values)
                 
-                elif name == "--help":
+                elif name == "--h":
                     self.help()
                     return False
                 
