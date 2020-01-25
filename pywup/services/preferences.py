@@ -1,4 +1,5 @@
 from pywup.services.system import error, expand_path
+from pywup.services.clusterfile import ClusterFile
 
 import yaml
 import os
@@ -64,8 +65,21 @@ class Preferences:
         if name == "temp":
             error("You cannot use a cluster named temp")
         
-        self.env_name = name
-        self.env_filepath = candidate
+        cluster = ClusterFile(candidate)
+
+        if cluster.docker_based:
+            self.cluster_name = name
+            self.cluster_filepath = candidate
+            self.cluster_env_name = cluster.env_name
+            self.cluster_env_filepath = cluster.env_filepath
+
+        else:
+            self.cluster_name = name
+            self.cluster_filepath = candidate
+            self.cluster_env_name = None
+            self.cluster_env_filepath = None
+
+        
 
 
     def lookup_env(self, name):
@@ -102,11 +116,17 @@ class Preferences:
         arch = self.arch_name
 
         env_name = env_name if env_name else "-"
-        cluster_name = cluster_name if cluster_name else "-"
-        cluster_env = cluster_env if cluster_env else "-"
         arch = arch if arch else "-"
 
-        state = env_name + "|" + cluster_env + "@" + cluster_name + "|" + arch
+        if cluster_name:
+            if cluster_env:
+                remote = cluster_env + "@" + cluster_name
+            else:
+                remote = cluster_name
+        else:
+            remote = "-"
+        
+        state = env_name + "|" + remote + "|" + arch
         
         folderpath = os.path.expanduser("~/.wup")
         os.makedirs(folderpath, exist_ok=True)

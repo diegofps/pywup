@@ -4,20 +4,21 @@ from pywup.services.context import Context
 
 class Remote(Context):
 
-    def __init__(self, other=None):
-        Context.__init__(self, other)
+    def __init__(self):
+        Context.__init__(self)
     
 
     def sync_build(self, clear, extra_volumes, send_env_file, send_all_build_volumes, send_all_deploy_volumes):
-        self.require(env=True, cluster=True)
+        env = self.envfile
+        cluster = self.clusterfile
 
         send_volumes = []
 
         if send_all_build_volumes:
-            send_volumes += self.e.build_volumes
+            send_volumes += env.build_volumes
         
         if send_all_deploy_volumes:
-            send_volumes += self.e.deploy_volumes
+            send_volumes += env.deploy_volumes
         
         send_volumes = clean_volumes(send_volumes)
         extra_volumes = clean_volumes(extra_volumes)
@@ -33,41 +34,42 @@ class Remote(Context):
 
 
     def sync_deploy(self, clear, dirs, sendEnv, sendAll, sendImage):
-        self.require(env=True, cluster=True)
+        env = self.envfile
+        cluster = self.clusterfile
         pass
 
 
     def build(self, doSync, extra_volumes):
-        self.require(env=True, cluster=True)
-        pass
+        env = self.envfile
+        cluster = self.clusterfile
 
 
     def deploy(self, doSync, extra_volumes):
-        self.require(env=True, cluster=True)
-        pass
+        env = self.envfile
+        cluster = self.clusterfile
 
 
     def start(self, doClean):
-        self.require(env=True, cluster=True)
-        pass
+        env = self.envfile
+        cluster = self.clusterfile
     
 
     def stop(self, doClean):
-        self.require(env=True, cluster=True)
-        pass
+        env = self.envfile
+        cluster = self.clusterfile
     
 
     def open(self, name):
-        self.require(env=True, cluster=True)
-        pass
+        env = self.envfile
+        cluster = self.clusterfile
     
 
     def launch(self):
-        self.require(env=True, cluster=True)
-        pass
+        env = self.envfile
+        cluster = self.clusterfile
     
 
     def run(self, command):
-        self.require(env=True, cluster=True)
-        pass
+        env = self.envfile
+        cluster = self.clusterfile
     
