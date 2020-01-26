@@ -33,7 +33,10 @@ def main(cmd, args):
             pref.lookup_cluster(cluster)
         
         if arch:
-            pref.arch_name = arch
+            if arch == "-":
+                pref.arch_name = None
+            else:
+                pref.arch_name = arch
         
         pref.save()
 

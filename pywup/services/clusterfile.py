@@ -1,4 +1,5 @@
 from pywup.services.system import error, rprint, WupError
+from pywup.services.docker import get_container_ip
 from pywup.services.envfile import EnvFile
 from pywup.services.system import run
 
@@ -6,17 +7,37 @@ import copy
 import yaml
 import re
 
+
 class Machine:
 
     def __init__(self, y=None):
         self.tags = []
-        self.procs = None
+        self.hostname = ""
+        self.procs = 1
         self.user = None
+        self.port = 22
+        self._credential = None
+        self.build = True
+        self.deploy = True
 
         if y is not None:
-            self.tags = y["tags"]
-            self.procs = y["procs"]
-            self.user = y["user"]
+            if "hostname" in y:
+                self.hostname = y["hostname"]
+            else:
+                error("Missing mandatory field in Machine definition: hostname")
+            
+            if "tags" in y:
+                self.tags = y["tags"]
+            if "procs" in y:
+                self.procs = y["procs"]
+            if "user" in y:
+                self.user = y["user"]
+            if "port" in y:
+                self.port = y["port"]
+            if "build" in y:
+                self.build = y["build"]
+            if "deploy" in y:
+                self.deploy = y["deploy"]
     
     def add_tag(self, name):
         self.tags.append(name)
@@ -24,6 +45,18 @@ class Machine:
     @property
     def dict(self):
         return copy.copy(self.__dict__)
+    
+    @property
+    def credential(self):
+        if self._credential is None:
+            if self.hostname.startswith("wclus__"):
+                self._credential = get_container_ip(self.hostname)
+            else:
+                self._credential = self.hostname
+            
+            if self.user is not None:
+                self._credential = self.user + "@" + self._credential
+        return self._credential
 
 
 class ClusterFile:
@@ -47,6 +80,44 @@ class ClusterFile:
         self.env_name = None
         self.archs = {}
         self.__env = None
+
+    def build_machines(self, arch=None):
+        result = []
+
+        if arch:
+            archs = dict()
+            archs[arch] = self.archs[arch]
+        else:
+            archs = self.archs
+
+        for arch_name in archs:
+            machines = archs[arch_name]
+            build_machine = None
+
+            for machine_name in machines:
+                m = machines[machine_name]
+                if m.build and (build_machine is None or build_machine.procs < m.procs):
+                    build_machine = m
+            
+            if build_machine:
+                result.append(build_machine)
+            else:
+                error("Missing build machine for arch:", arch_name)
+        
+        return result
+
+    def deploy_machines(self, arch=None):
+        result = []
+
+        for arch_name in self.archs:
+            if arch is None or arch_name == arch:
+                machines = self.archs[arch_name]
+                for machine_name in machines:
+                    m = machines[machine_name]
+                    if m.deploy:
+                        result.append(m)
+        
+        return result
 
 
     @property

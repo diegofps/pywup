@@ -50,6 +50,8 @@ class Preferences:
         if name == "-":
             self.cluster_name = None
             self.cluster_filepath = None
+            self.cluster_env_name = None
+            self.cluster_env_filepath = None
             return
         
         candidate = expand_path(name)

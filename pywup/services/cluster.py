@@ -31,10 +31,12 @@ class Cluster(Context):
         nodes = [c.container_name(i) for i in range(qtt)]
 
         for container in nodes:
-            m = c.create_machine("generic", container)
+            m = c.create_machine("docker", container)
             m.add_tag("fakecluster")
+            m.hostname = container
             m.user = "wup"
             m.procs = 1
+            m.port = 22
 
         for container in nodes:
             docker.deploy(env.image_name, container, env)

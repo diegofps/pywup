@@ -46,7 +46,7 @@ def cluster(cmd, args):
     from pywup.cmdtools.cluster import main
     main(cmd, args)
 
-def version(cmd, args):
+def about(cmd, args):
     print(wup_version)
 
 def wup(*params):
@@ -61,7 +61,7 @@ def wup(*params):
     r.map("env", env, "Manage docker environments for development and cluster deploy (wup style)")
     r.map("remote", remote, "Manager remote environments basedo on wup environments")
     r.map("cluster", cluster, "Simulate a cluster using docker containers")
-    r.map("version", version, "Show current wup version")
+    r.map("about", about, "Display wup info")
     
     r.run(handleError=True)
 

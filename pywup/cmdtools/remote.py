@@ -1,4 +1,4 @@
-from pywup.services.system import Route, Params
+from pywup.services.system import Route, Params, error
 from pywup.services.remote import Remote
 
 
@@ -11,30 +11,46 @@ def template(cmd, args):
         Remote().template(p.clustername, p.outputfolder)
 
 
-def sync_build(cmd, args):
+def sync(cmd, args):
     p = Params(cmd, args)
 
-    p.map("--clear", 0, None, "Deletes all volumes associated to this env stored in the build machines prior to sending anything")
-    p.map("--v", 1, None, "Sends a custom volume/directory to all build machines")
-    p.map("--env", 0, None, "Sends the environment file to the build machines")
-    p.map("--all-build", 0, None, "Sends all build volumes defined in the environment file")
-    p.map("--all-deploy", 0, None, "Sends all deploy volumes defined in the environment file")
+    p.map("--build", 0, None, "Indicates that all instructions will performed on the build machines")
+    p.map("--deploy", 0, None, "Indicates that all instructions will performed on the deploy machines")
+    p.map("--clear", 0, None, "Indicates that data will be removed on the remote machines, not sent")
+    p.map("--env", 0, None, "Sync will act upon the env file")
+    p.map("--image", 0, None, "Sync will act upon the image file")
+    p.map("--bv", 0, None, "Sync will act upon the build volumes")
+    p.map("--dv", 0, None, "Sync will act upon the deploy volumes")
+    p.map("--dir", 0, None, "Sync will act upon build and this custom directory")
+    p.map("--a", 0, None, "Activates --env --bv when using --build. Activates --env --image --dv when using --deploy")
 
     if p.run():
-        Remote().sync_build(p.__clear, p.every__v, p.__env, p.__all_build, p.__all_deploy)
+        build = p.__build
+        deploy = p.__deploy
+        clear = p.__clear
+        extra_dirs = p.every__dir
 
+        if not build and not deploy:
+            error("You must set --build or --deploy")
 
-def sync_deploy(cmd, args):
-    p = Params(cmd, args)
-    p.map("--clear", 0, None, "Deletes all volumes associated to this env stored in the deploy machines")
-    p.map("--v", 1, None, "Sends a custom volume/directory to all deploy machines")
-    p.map("--env", 0, None, "Sends the environment file to the deploy machines")
-    p.map("--all-build", 0, None, "Sends all build volumes defined in the environment file")
-    p.map("--all-deploy", 0, None, "Sends all deploy volumes defined in the environment file")
-    p.map("--image", 0, None, "Sends trhe build image file to all deploy machines, respecting their archs")
+        if build and deploy:
+            error("Activating both --build and --deploy is not allowed")
 
-    if p.run():
-        Remote().sync_deploy(p.__clear, p.every__dir, p.__env, p.__all, p.__image)
+        env = p.__env
+        image = p.__image
+        bv = p.__bv
+        dv = p.__dv
+
+        if p.__a and build:
+            env = True
+            bv = True
+        
+        if p.__a and deploy:
+            env = True
+            image = True
+            dv = True
+        
+        Remote().sync(build, deploy, clear, env, image, bv, dv, extra_dirs)
 
 
 def build(cmd, args):
@@ -84,7 +100,7 @@ def exec(cmd, args):
     p.map("command", 0, None, "Command to be executed in all deploy machines")
 
     if p.run():
-        Remote().open(p.command)
+        Remote().exec(p.command)
 
 
 def launch(cmd, args):
@@ -106,8 +122,7 @@ def main(cmd, args):
     r = Route(args, cmd)
 
     r.map("template", template, "Create an empty cluster file you can modify to represent a real cluster")
-    r.map("sync-build", sync_build, "Syncs directories to build machines")
-    r.map("sync-deploy", sync_deploy, "Syncs directories against the deploy machines")
+    r.map("sync", sync, "Sends volumes, env files and images to remote machines")
     r.map("start", start, "Starts the container in the remote machines")
     r.map("stop", stop, "Stops containers in the remote machines")
     r.map("open", open, "Opens a remote environment")

@@ -101,7 +101,7 @@ def run(cmds, write=None, read=False, suppressInterruption=False, suppressError=
         return
     
     if verbose:
-        print("Executing command: " + " | ".join(cmds))
+        print("Executing command:\n" + " | ".join(cmds))
 
     try:
         if write and read:
@@ -124,7 +124,7 @@ def run(cmds, write=None, read=False, suppressInterruption=False, suppressError=
             status = back.wait()
 
             if not suppressError and status != 0:
-                error("Failed to execute command", " | ".join(cmds))
+                error("Failed to execute command:\n", " | ".join(cmds))
             
             return status,lines
 
@@ -154,7 +154,7 @@ def run(cmds, write=None, read=False, suppressInterruption=False, suppressError=
             status = ps[-1].wait()
 
             if not suppressError and status != 0:
-                error("Failed to execute command", " | ".join(cmds))
+                error("Failed to execute command:\n", " | ".join(cmds))
             
             return status, None
 
@@ -173,7 +173,7 @@ def run(cmds, write=None, read=False, suppressInterruption=False, suppressError=
             status = back.wait()
 
             if not suppressError and status != 0:
-                error("Failed to execute command", " | ".join(cmds))
+                error("Failed to execute command:\n", " | ".join(cmds))
             
             return status, lines
 
@@ -181,7 +181,7 @@ def run(cmds, write=None, read=False, suppressInterruption=False, suppressError=
             status = os.system(cmds[0])
 
             if not suppressError and status != 0:
-                error("Failed to execute command", " | ".join(cmds))
+                error("Failed to execute command:\n", " | ".join(cmds))
             
             return status, None
         
@@ -203,7 +203,7 @@ def run(cmds, write=None, read=False, suppressInterruption=False, suppressError=
             status = ps[-1].wait()
             
             if not suppressError and status != 0:
-                error("Failed to execute command", " | ".join(cmds))
+                error("Failed to execute command:\n", " | ".join(cmds))
             
             return status, None
 
@@ -331,7 +331,7 @@ class Route:
 
         except WupError as e:
             if handleError:
-                abort(colors.red("Error: "+ e.message))
+                abort(colors.red("[Error] "+ e.message))
             else:
                 raise e
     
@@ -433,13 +433,13 @@ class Params:
         wprint("SINTAX:")
 
         if arguments and options:
-            print("    " + name + colors.GREEN + " " + " ".join(["[" + x.name + "]" for x in self._parameters]) + colors.YELLOW + " {OPTIONS}" + colors.RESET)
+            print("    " + name + colors.green(" " + " ".join(["[" + x.name + "]" for x in self._parameters])) + colors.yellow(" {OPTIONS}"))
         
         elif arguments:
-            print("    " + name + colors.GREEN + " " + " ".join(["[" + x.name + "]" for x in self._parameters]) + colors.RESET)
+            print("    " + name + colors.green(" " + " ".join(["[" + x.name + "]" for x in self._parameters])))
 
         elif options:
-            print("    " + name + colors.YELLOW + " {OPTIONS}" + colors.RESET)
+            print("    " + name + colors.yellow(" {OPTIONS}"))
         
         else:
             print("    " + name)
@@ -450,7 +450,7 @@ class Params:
 
             l = max([len(x.name) for x in arguments])
             for x in arguments:
-                print("    " + colors.GREEN + x.name + colors.RESET + " " * (l-len(x.name)) + " - " + x.description)
+                print("    " + colors.green(x.name) + " " * (l-len(x.name)) + " - " + x.description)
         
         if options:
             print()
@@ -458,7 +458,7 @@ class Params:
 
             l = max([len(x.name) for x in options])
             for x in options:
-                print("    " + colors.YELLOW + x.name + colors.RESET + " " * (l-len(x.name)) + " - " + x.description)
+                print("    " + colors.yellow(x.name) + " " * (l-len(x.name)) + " - " + x.description)
         
         print()
 
