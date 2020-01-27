@@ -7,7 +7,7 @@ import os
 
 class Preferences:
 
-    FILEPATH = "~/.wup/preferences.yaml"
+    FILEPATH = expand_path("~/.wup/preferences.yaml")
 
     ENV_NAME = "ENV_NAME"
     CLUSTER_NAME = "CLUSTER_NAME"

@@ -59,7 +59,7 @@ def send_dirs(env, machines, dirs):
     error("Not implemented yet")
 
 
-class Remote(Context):
+class Virtual(Context):
 
     def __init__(self):
         Context.__init__(self)
@@ -145,41 +145,3 @@ class Remote(Context):
         env = self.envfile()
         cluster = self.clusterfile()
     
-
-    def template(self, clustername, outfolder):
-
-        c = ClusterFile()
-        c.name = clustername
-        c.docker_based = False
-        c.filepath = expand_path(os.path.join(outfolder, clustername + ".cluster"))
-        i = 1
-
-        for name in ["ryzen1700_0", "ryzen1700_1"]:
-            m = c.create_machine("amd64", name)
-            m.add_tag("has_gpu")
-            m.add_tag("nvidia_1060_3gb_gpu")
-            m.add_tag("32gb_ram")
-            m.add_tag("ryzen1700")
-            m.hostname = "192.168.0." + str(i)
-            m.user = "wup"
-            m.procs = 16
-
-            i += 1
-
-        for name in ["rasp_0", "rasp_1"]:
-            m = c.create_machine("aarch64", name)
-            m.add_tag("rasp3")
-            m.add_tag("1gb_ram")
-            m.hostname = "192.168.0." + str(i)
-            m.user = "wup"
-            m.procs = 4
-
-            i += 1
-
-        c.export(c.filepath)
-
-        self.pref.cluster_name = clustername
-        self.pref.cluster_filepath = c.filepath
-        self.pref.cluster_env_name = None
-        self.pref.cluster_env_filepath = None
-        self.pref.save()

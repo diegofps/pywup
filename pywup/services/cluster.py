@@ -1,13 +1,9 @@
-from pywup.services.system import error, colors, expand_path
+from pywup.services.system import run, error, quote, colors, expand_path
 from pywup.services.clusterfile import ClusterFile
 from pywup.services.context import Context
-from pywup.services import docker
 
-from multiprocessing import Pool, cpu_count
-
-import yaml
 import os
-import re
+
 
 
 class Cluster(Context):
@@ -15,86 +11,102 @@ class Cluster(Context):
     def __init__(self):
         Context.__init__(self)
 
+    
+    def template(self, clustername, outfolder):
 
-    def new(self, clustername, qtt, outfolder):
-        env = self.envfile()
-        
         c = ClusterFile()
         c.name = clustername
-        c.docker_based = True
+        c.docker_based = False
         c.filepath = expand_path(os.path.join(outfolder, clustername + ".cluster"))
-        c.env = env
+        i = 1
 
-        if not docker.exists_image(env.image_name):
-            error("You must COMMIT the image first")
-
-        nodes = [c.container_name(i) for i in range(qtt)]
-
-        for container in nodes:
-            m = c.create_machine("docker", container)
-            m.add_tag("fakecluster")
-            m.hostname = container
+        for name in ["ryzen1700_0", "ryzen1700_1"]:
+            m = c.create_machine("amd64", name)
+            m.add_tag("has_gpu")
+            m.add_tag("nvidia_1060_3gb_gpu")
+            m.add_tag("32gb_ram")
+            m.add_tag("ryzen1700")
+            m.hostname = "192.168.0." + str(i)
             m.user = "wup"
-            m.procs = 1
-            m.port = 22
+            m.procs = 16
 
-        for container in nodes:
-            docker.deploy(env.image_name, container, env)
-        
+            i += 1
+
+        for name in ["rasp_0", "rasp_1"]:
+            m = c.create_machine("aarch64", name)
+            m.add_tag("rasp3")
+            m.add_tag("1gb_ram")
+            m.hostname = "192.168.0." + str(i)
+            m.user = "wup"
+            m.procs = 4
+
+            i += 1
+
         c.export(c.filepath)
-        
-        self.pref.cluster_name = c.name
+
+        self.pref.cluster_name = clustername
         self.pref.cluster_filepath = c.filepath
-        self.pref.cluster_env_name = c.env.name
-        self.pref.cluster_env_filepath = c.env.filepath
-        self.pref.save()
-
-        print("Cluster file written to", colors.yellow(c.filepath))
-
-
-    def rm(self):
-        cluster = self.docker_clusterfile()
-        docker.rm_container(cluster.docker_nodes)
-
-        self.pref.cluster_name = None
-        self.pref.cluster_filepath = None
         self.pref.cluster_env_name = None
         self.pref.cluster_env_filepath = None
         self.pref.save()
 
 
-    def start(self):
-        cluster = self.docker_clusterfile()
-        docker.start_container(cluster.docker_nodes, cluster.env, attach=True)
-
-
-    def stop(self):
-        docker.stop(self.docker_clusterfile().docker_nodes)
-
-
-    def status(self):
-        nodes = self.docker_clusterfile().docker_nodes
-
-        names = ["NAME"] + nodes
-        ips = ["IP"] + [x[1] for x in docker.get_container_ip(nodes)]
-        running = ["RUNNING"] + [str(x) for x in docker.is_container_running(nodes)]
-
-        return [names, ips, running]
-
-
-    def ip(self):
-        return docker.get_container_ip(self.docker_clusterfile().docker_nodes)
-
-
-    def open(self, node_number):
-        cluster = self.docker_clusterfile()
-        docker.init_and_open(cluster.container_name(node_number), cluster.env.bashrc)
-    
-
     def ls(self):
-        docker.ls_clusters()
+        cluster = self.clusterfile()
+        archs = ["ARCH"]
+        name = ["NAME"]
+        credentials = ["CREDENTIAL"]
+        procs = ["PROCS"]
+        build = ["BUILD"]
+        deploy = ["DEPLOY"]
+
+        for arch_name, arch in cluster.archs.items():
+            for machine_name, machine in arch.items():
+                name.append(machine_name)
+                credentials.append(machine.credential)
+                archs.append(arch_name)
+                procs.append(str(machine.procs))
+                build.append(str(machine.build))
+                deploy.append(str(machine.deploy))
+        
+        return [archs, name, credentials, procs, build, deploy]
 
 
-    def lsn(self):
-        docker.ls_cluster_nodes(self.docker_clusterfile().name)
+    def open(self, clustername):
+        cluster = self.clusterfile()
+        m = cluster.machine(clustername)
+        run("ssh " + m.credential)
+
+
+    def exec(self, cmd_arguments):
+        pass
+
+
+    def send(self, src, dst):
+        pass
+
+
+    def get(self, src, dst):
+        pass
+
+
+    def doctor(self):
+        known_hosts = expand_path("~/.ssh/known_hosts")
+        id_wup_pub = expand_path("~/.ssh/id_wup.pub")
+        id_wup = expand_path("~/.ssh/id_wup")
+        cluster = self.clusterfile()
+
+        if not os.path.exists(id_wup) or not os.path.exists(id_wup_pub):
+            run("ssh-keygen -t rsa -f \"%s\" -N \"\"" % id_wup, suppressError=True)
+            run("chmod 700 %s %s" % (id_wup, id_wup_pub))
+
+        for m in cluster.all_machines():
+            credential = m.credential
+            ip = m.ip
+
+            print(known_hosts, ip, credential)
+
+            run("ssh-keygen -f \"%s\" -R \"%s\"" % (known_hosts,ip), suppressError=True)
+            run("ssh-keyscan \"%s\" >> \"%s\"" % (ip, known_hosts), suppressError=True)
+            run("ssh-copy-id -i %s %s" % (id_wup_pub, credential))
 

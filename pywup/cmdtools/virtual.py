@@ -1,14 +1,5 @@
 from pywup.services.system import Route, Params, error
-from pywup.services.remote import Remote
-
-
-def template(cmd, args):
-    p = Params(cmd, args)
-    p.map("clustername", 1, None, "Name of the new cluster", mandatory=True)
-    p.map("outputfolder", 1, ".", "Output folder to save the cluster file descriptor")
-
-    if p.run():
-        Remote().template(p.clustername, p.outputfolder)
+from pywup.services.virtual import Virtual
 
 
 def sync(cmd, args):
@@ -50,7 +41,7 @@ def sync(cmd, args):
             image = True
             dv = True
         
-        Remote().sync(build, deploy, clear, env, image, bv, dv, extra_dirs)
+        Virtual().sync(build, deploy, clear, env, image, bv, dv, extra_dirs)
 
 
 def build(cmd, args):
@@ -59,7 +50,7 @@ def build(cmd, args):
     p.map("--v", 1, None, "Map a custom volume inside the build machines")
 
     if p.run():
-        Remote().build(p.__sync, p.every__v)
+        Virtual().build(p.__sync, p.every__v)
 
 
 def deploy(cmd, args):
@@ -68,7 +59,7 @@ def deploy(cmd, args):
     p.map("--v", 1, None, "Map a custom volume inside the deploy machines")
 
     if p.run():
-        Remote().deploy(p.__sync, p.every__v)
+        Virtual().deploy(p.__sync, p.every__v)
 
 
 def start(cmd, args):
@@ -76,7 +67,7 @@ def start(cmd, args):
     p.map("--clean", 0, None, "Stops all other containers in the deploy machines prior to starting this")
 
     if p.run():
-        Remote().start(p.__clean)
+        Virtual().start(p.__clean)
 
 
 def stop(cmd, args):
@@ -84,7 +75,7 @@ def stop(cmd, args):
     p.map("--clean", 0, None, "Stops the environment and all other containers in the deploy machines")
 
     if p.run():
-        Remote().stop(p.__clean)
+        Virtual().stop(p.__clean)
 
 
 def open(cmd, args):
@@ -92,7 +83,7 @@ def open(cmd, args):
     p.map("name", 0, None, "Name of the remote machine to open")
 
     if p.run():
-        Remote().open(p.name)
+        Virtual().open(p.name)
 
 
 def exec(cmd, args):
@@ -100,14 +91,14 @@ def exec(cmd, args):
     p.map("command", 0, None, "Command to be executed in all deploy machines")
 
     if p.run():
-        Remote().exec(p.command)
+        Virtual().exec(p.command)
 
 
 def launch(cmd, args):
     p = Params(cmd, args)
 
     if p.run():
-        Remote().launch()
+        Virtual().launch()
 
 
 def run(cmd, args):
@@ -115,14 +106,15 @@ def run(cmd, args):
 
     if p.run():
         arguments = ["\"" + x + "\"" for x in p._input_parameters]
-        Remote().run(" ".join(arguments))
+        Virtual().run(" ".join(arguments))
 
 
 def main(cmd, args):
     r = Route(args, cmd)
 
-    r.map("template", template, "Create an empty cluster file you can modify to represent a real cluster")
     r.map("sync", sync, "Sends volumes, env files and images to remote machines")
+    r.map("build", build, "Builds the env image inside the build machines")
+    r.map("deploy", deploy, "Deploy the images built inside the deploy machines")
     r.map("start", start, "Starts the container in the remote machines")
     r.map("stop", stop, "Stops containers in the remote machines")
     r.map("open", open, "Opens a remote environment")

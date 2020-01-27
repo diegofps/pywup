@@ -181,6 +181,8 @@ def build_with_commits(cont_name, img_name, e, fromCommit=None, extra_volumes=[]
     commit("tmp", img_name)
     rename_container("tmp", cont_name)
 
+    run_start(cont_name, e, attach=True)
+
     yprint("Cleaning old snapshots ...")
     current_hashs = {x.hashstr for x in e.commits}
     olds = []
@@ -292,10 +294,10 @@ def exists_image(img_name):
     return len(rows) >= 2
 
 
-def start_container(cont_name, e, attach=False, skip_start=False):
+def start_container(cont_name, e, attach=True, skip_start=False):
     if type(cont_name) is list:
         for n in cont_name:
-            start_container(n, e, attach)
+            start_container(n, e, attach=attach, skip_start=skip_start)
         return
     
     if is_container_running(cont_name):
@@ -306,9 +308,13 @@ def start_container(cont_name, e, attach=False, skip_start=False):
     run("docker start " + cont_name + " > /dev/null")
 
     if not skip_start:
-        print("Running start script for", cont_name)
-        cmds = e.start + ["sleep 1\n"]
-        exec(cont_name, e.bashrc, cmds, attach)
+        run_start(cont_name, e, attach)
+
+
+def run_start(cont_name, e, attach=False):
+    print("Running start script for", cont_name)
+    cmds = e.start + ["sleep 1\n"]
+    exec(cont_name, e.bashrc, cmds, attach)
 
 
 def launch(cont_name, e, attach=False):

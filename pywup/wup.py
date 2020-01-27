@@ -38,12 +38,16 @@ def env(cmd, args):
     from pywup.cmdtools.env import main
     main(cmd, args)
 
-def remote(cmd, args):
-    from pywup.cmdtools.remote import main
+def sim(cmd, args):
+    from pywup.cmdtools.sim import main
     main(cmd, args)
 
 def cluster(cmd, args):
     from pywup.cmdtools.cluster import main
+    main(cmd, args)
+
+def virtual(cmd, args):
+    from pywup.cmdtools.virtual import main
     main(cmd, args)
 
 def about(cmd, args):
@@ -59,8 +63,9 @@ def wup(*params):
     r.map("backup", backup, "Backup system files into a folder synced to a cloud")
     r.map("q", q, "Run SQL in CSV files (Requires python-q-text-as-data)")
     r.map("env", env, "Manage docker environments for development and cluster deploy (wup style)")
-    r.map("remote", remote, "Manager remote environments basedo on wup environments")
-    r.map("cluster", cluster, "Simulate a cluster using docker containers")
+    r.map("sim", sim, "Simulate a cluster on your local machine using docker containers")
+    r.map("cluster", cluster, "Interact with the current cluster")
+    r.map("virtual", virtual, "Manage wup environments as a virtual cluster deployed on top of a real cluster")
     r.map("about", about, "Display wup info")
     
     r.run(handleError=True)

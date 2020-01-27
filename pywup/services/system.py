@@ -69,6 +69,18 @@ def expand_path(filepath):
     return os.path.abspath(os.path.join(".", filepath))
 
 
+def print_table(columns):
+    lengths = [max([len(x) for x in array]) for array in columns]
+
+    for i, tup in enumerate(zip(*columns)):
+        cells = [x + " " * (lengths[i]-len(x)) for i, x in enumerate(tup)]
+        
+        if i == 0:
+            wprint("    ".join(cells))
+        else:
+            print("    ".join(cells))
+
+
 def yprint(*args):
     print(colors.YELLOW + " ".join(args) + colors.RESET)
 

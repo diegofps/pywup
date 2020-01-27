@@ -10,7 +10,7 @@ import re
 
 class Machine:
 
-    def __init__(self, y=None):
+    def __init__(self):
         self.tags = []
         self.hostname = ""
         self.procs = 1
@@ -20,43 +20,52 @@ class Machine:
         self.build = True
         self.deploy = True
 
-        if y is not None:
-            if "hostname" in y:
-                self.hostname = y["hostname"]
-            else:
-                error("Missing mandatory field in Machine definition: hostname")
-            
-            if "tags" in y:
-                self.tags = y["tags"]
-            if "procs" in y:
-                self.procs = y["procs"]
-            if "user" in y:
-                self.user = y["user"]
-            if "port" in y:
-                self.port = y["port"]
-            if "build" in y:
-                self.build = y["build"]
-            if "deploy" in y:
-                self.deploy = y["deploy"]
+    def init_from(self, y):
+        if "hostname" in y:
+            self.hostname = y["hostname"]
+        else:
+            error("Missing mandatory field in Machine definition: hostname")
+        
+        if "tags" in y:
+            self.tags = y["tags"]
+        if "procs" in y:
+            self.procs = y["procs"]
+        if "user" in y:
+            self.user = y["user"]
+        if "port" in y:
+            self.port = y["port"]
+        if "build" in y:
+            self.build = y["build"]
+        if "deploy" in y:
+            self.deploy = y["deploy"]
+
     
     def add_tag(self, name):
         self.tags.append(name)
 
+
     @property
     def dict(self):
         return copy.copy(self.__dict__)
+
     
     @property
     def credential(self):
         if self._credential is None:
-            if self.hostname.startswith("wclus__"):
-                self._credential = get_container_ip(self.hostname)
+            if self.user is None:
+                self._credential = self.ip
             else:
-                self._credential = self.hostname
-            
-            if self.user is not None:
-                self._credential = self.user + "@" + self._credential
+                self._credential = self.user + "@" + self.ip
+
         return self._credential
+    
+    @property
+    def ip(self):
+        if self.hostname.startswith("wclus__"):
+            return get_container_ip(self.hostname)
+        else:
+            return self.hostname
+            
 
 
 class ClusterFile:
@@ -79,6 +88,7 @@ class ClusterFile:
         self.env_filepath = None
         self.env_name = None
         self.archs = {}
+        self.machines = {}
         self.__env = None
 
     def build_machines(self, arch=None):
@@ -106,6 +116,7 @@ class ClusterFile:
         
         return result
 
+
     def deploy_machines(self, arch=None):
         result = []
 
@@ -120,11 +131,23 @@ class ClusterFile:
         return result
 
 
+    def all_machines(self, arch=None):
+        if arch is None:
+            return self.machines.values()
+        else:
+            return self.archs[arch].values()
+    
+
+    def machine(self, name):
+        return self.machines[name]
+
+
     @property
     def env(self):
         if self.__env is None:
             self.__env = EnvFile(self.env_name, self.env_filepath)
         return self.__env
+
 
     @env.setter
     def env(self, env):
@@ -157,16 +180,10 @@ class ClusterFile:
         self.env_filepath = y["env_filepath"]
         self.env_name = y["env_name"]
 
-        y_archs = y["archs"]
-
-        for arch_name in y_archs:
-            arch = {}
-            self.archs[arch_name] = arch
-            y_machines = y_archs[arch_name]
-
-            for machine_name in y_machines:
-                y_machine = y_machines[machine_name]
-                arch[machine_name] = Machine(y_machine)
+        for arch_name, y_machines in y["archs"].items():
+            for machine_name, y_machine in y_machines.items():
+                m = self.create_machine(arch_name, machine_name)
+                m.init_from(y_machine)
 
 
     def export(self, filepath):
@@ -181,7 +198,12 @@ class ClusterFile:
         arch = self.archs[arch_name]
 
         if not machine_name in arch:
-            arch[machine_name] = Machine()
+            if machine_name in self.machines:
+                error("A machine with this name already exists in another arch")
+            
+            m = Machine()
+            arch[machine_name] = m
+            self.machines[machine_name] = m
         
         return arch[machine_name]
 
