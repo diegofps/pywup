@@ -1,6 +1,8 @@
-from pywup.services.system import run, error, quote, colors, expand_path
+from pywup.services.system import run, error, quote, colors, expand_path, rprint, yprint, wprint
 from pywup.services.clusterfile import ClusterFile
 from pywup.services.context import Context
+
+from collections import defaultdict
 
 import os
 
@@ -91,14 +93,22 @@ class Cluster(Context):
 
 
     def doctor(self):
+        sanity_check = []
+        missing_docker = []
+        missing_docker_group = []
+        ssh_copy_failed = []
+        docker_ps_did_not_work = []
+
         known_hosts = expand_path("~/.ssh/known_hosts")
         id_wup_pub = expand_path("~/.ssh/id_wup.pub")
         id_wup = expand_path("~/.ssh/id_wup")
         cluster = self.clusterfile()
 
+        #import pdb; pdb.set_trace()
+
         if not os.path.exists(id_wup) or not os.path.exists(id_wup_pub):
-            run("ssh-keygen -t rsa -f \"%s\" -N \"\"" % id_wup, suppressError=True)
-            run("chmod 700 %s %s" % (id_wup, id_wup_pub))
+            run("ssh-keygen -t rsa -f \"%s\" -N \"\"" % id_wup, suppressError=True, read=True)
+            run("chmod 700 %s %s" % (id_wup, id_wup_pub), read=True, suppressError=True)
 
         for m in cluster.all_machines():
             credential = m.credential
@@ -106,7 +116,47 @@ class Cluster(Context):
 
             print(known_hosts, ip, credential)
 
-            run("ssh-keygen -f \"%s\" -R \"%s\"" % (known_hosts,ip), suppressError=True)
+            run("ssh-keygen -f \"%s\" -R \"%s\"" % (known_hosts,ip), suppressError=True, read=True)
             run("ssh-keyscan \"%s\" >> \"%s\"" % (ip, known_hosts), suppressError=True)
-            run("ssh-copy-id -i %s %s" % (id_wup_pub, credential))
+
+            status, rows = run("ssh-copy-id -i %s %s" % (id_wup_pub, credential), suppressError=True, read=True)
+            if status != 0:
+                ssh_copy_failed.append(m)
+            
+            status, rows = run("ssh %s \"ls\"" % credential, read=True, suppressError=True)
+            if status != 0:
+                sanity_check.append(m)
+
+            else:
+                status, rows = run("ssh %s \"docker -version\"" % credential, read=True, suppressError=True)
+                if status != 0 or not rows or not "Docker version" in rows[0]:
+                    missing_docker.append(m)
+                
+                status, rows = run("ssh %s \"groups\"" % credential, read=True, suppressError=True)
+                if status != 0 or not rows or not "docker" in rows[0]:
+                    missing_docker_group.append(m)
+                
+                else:
+                    status, rows = run("ssh %s \"docker ps\"" % credential, suppressError=True)
+                    if status != 0:
+                        docker_ps_did_not_work.append(m)
+        
+        print()
+        
+        self.diagnose("Can't execute simple remote command", sanity_check)
+        self.diagnose("ssh-copy-id failed", ssh_copy_failed)
+        self.diagnose("Missing docker", missing_docker)
+        self.diagnose("Missing docker group", missing_docker_group)
+        self.diagnose("Docker ps did not work", docker_ps_did_not_work)
+    
+    
+    def diagnose(self, diagnostic, items):
+        if items:
+            rprint(diagnostic)
+
+            for m in items:
+                print("    " + m.hostname)
+
+            print()
+
 

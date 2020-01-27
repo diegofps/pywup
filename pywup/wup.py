@@ -63,7 +63,7 @@ def wup(*params):
     r.map("backup", backup, "Backup system files into a folder synced to a cloud")
     r.map("q", q, "Run SQL in CSV files (Requires python-q-text-as-data)")
     r.map("env", env, "Manage docker environments for development and cluster deploy (wup style)")
-    r.map("sim", sim, "Simulate a cluster on your local machine using docker containers")
+    r.map("multi", sim, "Simulate a cluster on your local machine using docker containers and wup environments")
     r.map("cluster", cluster, "Interact with the current cluster")
     r.map("virtual", virtual, "Manage wup environments as a virtual cluster deployed on top of a real cluster")
     r.map("about", about, "Display wup info")
