@@ -1,5 +1,5 @@
 from pywup.services.system import abort, error, WupError, Args, run, Route, Params, print_table
-from pywup.services.sim import Simulation
+from pywup.services.multi import Simulation
 
 from multiprocessing import Pool, cpu_count
 

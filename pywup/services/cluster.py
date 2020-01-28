@@ -1,9 +1,10 @@
-from pywup.services.system import run, error, quote, colors, expand_path, rprint, yprint, wprint
+from pywup.services.system import run, error, quote, colors, expand_path, rprint, yprint, wprint, quote_single
 from pywup.services.clusterfile import ClusterFile
 from pywup.services.context import Context
 
 from collections import defaultdict
 
+import sys
 import os
 
 
@@ -80,8 +81,23 @@ class Cluster(Context):
         run("ssh " + m.credential)
 
 
-    def exec(self, cmd_arguments):
-        pass
+    def exec(self, cmd):
+        cluster = self.clusterfile()
+        cmds = quote_single("".join(cmd + ["\n"]))
+
+        for i, m in enumerate(cluster.all_machines()):
+            credential = m.credential
+            status, rows = run("ssh %s %s" % (credential, cmds), read=True)
+
+            idd = str(i)
+
+            if status == 0:
+                result = colors.green("SUCCESS")
+            else:
+                result = colors.yellow("FAILED")
+
+            print(colors.blue("[%s:%s]" % (idd, m.hostname)) + " => " + result)
+            sys.stdout.writelines(rows)
 
 
     def send(self, src, dst):
