@@ -11,6 +11,7 @@ import os
 
 class Cluster(Context):
 
+
     def __init__(self):
         Context.__init__(self)
 
@@ -81,6 +82,7 @@ class Cluster(Context):
         cluster = self.clusterfile()
         m = cluster.machine(clustername)
         run("ssh " + m.credential)
+
 
     def exec_single(self, cmd, m, verbose=True, idd=None):
 
@@ -161,6 +163,72 @@ class Cluster(Context):
 
         for name, m in cluster.machines.items():
             self.get_single(name, src, dst, m=m)
+
+
+    def pbash(self):
+
+        from subprocess import Popen, PIPE
+        import shlex
+        import sys
+
+        secret = "jklaslkvcjkasdw78345jksdfl;bvcjkn45378sdjkvcdl;bgfrl;dsmn4356sdfhjgm4567dfvkdfg;lbvc645kxcv768dfvj65vbckl435"
+        print_break = ("\necho '" + secret + "'\n").encode()
+        cluster = self.clusterfile()
+        conns = []
+        current_dir = "/"
+
+        for m in cluster.all_machines():
+            args = shlex.split("ssh -t %s bash" % m.credential)
+            ps = Popen(args, stdout=PIPE, stdin=PIPE)
+            conns.append(ps)
+
+        def insert(cmd, conns):
+            outputs = []
+
+            for c in conns:
+                c.stdin.write(cmd.encode())
+                c.stdin.write(print_break)
+            
+            for c in conns:
+                output = []
+
+                while True:
+                    line = c.stdout.readline().decode("utf-8")
+                    
+                    if line.startswith(secret):
+                        break
+                    else:
+                        output.append(line)
+                
+                outputs.append(output)
+
+            return outputs
+
+        def print_outputs(outputs):
+            for i, output in enumerate(outputs):
+
+                print()
+                print(colors.blue("[%d]" % i))
+
+                for line in output:
+                    sys.stdout.write(line)
+        
+        outputs = insert("cd /", conns)
+        print_outputs(outputs)
+
+        while True:
+            try:
+                sys.stdout.write("%s %s $ " % (cluster.name, current_dir))
+                command = sys.stdin.readline()
+
+                if command == "exit":
+                    break
+
+                outputs = insert(command, conns)
+                print_outputs(outputs)
+                
+            except KeyboardInterrupt:
+                break
 
 
     def doctor(self):

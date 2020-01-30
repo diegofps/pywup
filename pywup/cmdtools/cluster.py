@@ -74,6 +74,13 @@ def doctor(cmd, args):
         Cluster().doctor()
 
 
+def pbash(cmd, args):
+    p = Params(cmd, args)
+
+    if p.run():
+        Cluster().pbash()
+
+
 def main(cmd, args):
     r = Route(args, cmd)
 
@@ -84,5 +91,6 @@ def main(cmd, args):
     r.map("send", send, "Sends a file or directory to all remote machines")
     r.map("get", get, "Retrieve a file or directory from the remote machines")
     r.map("doctor", doctor, "Fixes common SSH validations")
+    r.map("pbash", pbash, "Parallel bash")
     
     r.run()
