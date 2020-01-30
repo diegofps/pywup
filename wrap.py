@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+from pywup.services.system import yprint
 from subprocess import Popen
 
 import termios
@@ -118,6 +119,7 @@ def test2():
     import readline
 
     command = "bash"
+    wup_env_open = b"/home/diego/Sources/pywup/pywup/wup.py env open\n"
 
     master_fd1, slave_fd1 = pty.openpty()
     p1 = Popen(shlex.shlex(command),
@@ -139,12 +141,15 @@ def test2():
     secret2 = secret + b"\r"
     print_secret = b"echo '%s'\n" % secret
 
+    os.write(master_fd1, wup_env_open)
+    os.write(master_fd2, wup_env_open)
+
     while True:
         try:
             cmd = input(">> ").strip()
         except EOFError:
             print()
-            cmd = "exit"
+            break
 
         if cmd == "":
             continue
@@ -169,7 +174,9 @@ def test2():
                 d = os.read(sys.stdin.fileno(), 10240)
             
             elif master_fd1 in r:
+                
                 o = os.read(master_fd1, 10240)
+                #os.write(sys.stdout.fileno(), o)
 
                 if o:
                     outputs[0] = outputs[0] + o
@@ -178,6 +185,7 @@ def test2():
 
             elif master_fd2 in r:
                 o = os.read(master_fd2, 10240)
+                #os.write(sys.stdout.fileno(), o)
                 
                 if o:
                     outputs[1] = outputs[1] + o
@@ -186,8 +194,8 @@ def test2():
         
         for i, data in enumerate(outputs):
             print()
-            print("--- OUTPUT FOR %d WAS ---" % i)
-            os.write(sys.stdout.fileno(), outputs[i])
+            yprint("--- OUTPUT FOR %d WAS ---" % i)
+            os.write(sys.stdout.fileno(), data)
 
 
 def test3():
