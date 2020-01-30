@@ -3,8 +3,6 @@ from pywup.services.clusterfile import ClusterFile
 from pywup.services.context import Context
 from pywup.services import docker
 
-from multiprocessing import Pool, cpu_count
-
 import yaml
 import os
 import re
