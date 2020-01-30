@@ -55,6 +55,7 @@ class Cluster(Context):
 
 
     def ls(self):
+
         cluster = self.clusterfile()
         archs = ["ARCH"]
         name = ["NAME"]
@@ -76,41 +77,98 @@ class Cluster(Context):
 
 
     def open(self, clustername):
+
         cluster = self.clusterfile()
         m = cluster.machine(clustername)
         run("ssh " + m.credential)
 
+    def exec_single(self, cmd, m, verbose=True, idd=None):
 
-    def exec(self, cmd):
-        cluster = self.clusterfile()
+        if type(m) is str:
+            m = self.clusterfile().machine(m)
+
+        if type(cmd) is not list:
+            cmd = [cmd]
+        
         cmds = quote_single("".join(cmd + ["\n"]))
 
-        for i, m in enumerate(cluster.all_machines()):
-            credential = m.credential
-            status, rows = run("ssh %s %s" % (credential, cmds), read=True)
+        credential = m.credential
+        status, rows = run("ssh %s %s" % (credential, cmds), read=True)
 
-            idd = str(i)
-
+        if verbose:
             if status == 0:
                 result = colors.green("SUCCESS")
             else:
                 result = colors.yellow("FAILED")
 
-            print(colors.blue("[%s:%s]" % (idd, m.hostname)) + " => " + result)
+            if idd is None:
+                print(colors.blue("[%s]" % m.hostname) + " => " + result)
+            else:
+                print(colors.blue("[%s:%s]" % (idd, m.hostname)) + " => " + result)
+            
             sys.stdout.writelines(rows)
 
 
-    def send(self, src, dst):
-        pass
+    def exec_all(self, cmd, verbose=True):
+
+        cluster = self.clusterfile()
+
+        for i, m in enumerate(cluster.all_machines()):
+            self.exec_single(cmd, m, idd=str(i))
 
 
-    def get(self, src, dst):
-        pass
+    def send_single(self, m, src, dst=None):
+
+        if not os.path.exists(src):
+            error("Could not find source file:", src)
+
+        if type(m) is str:
+            m = self.clusterfile().machine(m)
+        
+        if dst is None:
+            src = expand_path(src)
+            base = os.path.dirname(src)
+            dst = src
+
+            create_dir = "mkdir -p \"%s\"" % base
+            self.exec_single(create_dir, m=m, verbose=False)
+
+        run("rsync -r \"%s\" \"%s:%s\"" % (src, m.credential, dst))
+
+    
+    def send_all(self, src, dst=None):
+
+        cluster = self.clusterfile()
+
+        for m in cluster.all_machines():
+            self.send_single(m, src, dst)
+
+
+    def get_single(self, name, src, dst=None, m=None):
+
+        if m is None:
+            m = self.clusterfile().machine(name)
+        
+        dst = os.path.join(dst, name)
+        os.makedirs(dst, exist_ok=True)
+
+        run("rsync -r \"%s:%s\" \"%s/\"" % (m.credential, src, dst))
+
+
+    def get_all(self, src, dst=None):
+
+        cluster = self.clusterfile()
+
+        for name, m in cluster.machines.items():
+            self.get_single(name, src, dst, m=m)
 
 
     def doctor(self):
+
         sanity_check = []
         missing_docker = []
+        missing_rsync = []
+        missing_pywup = []
         missing_docker_group = []
         ssh_copy_failed = []
         docker_ps_did_not_work = []
@@ -119,8 +177,6 @@ class Cluster(Context):
         id_wup_pub = expand_path("~/.ssh/id_wup.pub")
         id_wup = expand_path("~/.ssh/id_wup")
         cluster = self.clusterfile()
-
-        #import pdb; pdb.set_trace()
 
         if not os.path.exists(id_wup) or not os.path.exists(id_wup_pub):
             run("ssh-keygen -t rsa -f \"%s\" -N \"\"" % id_wup, suppressError=True, read=True)
@@ -148,6 +204,14 @@ class Cluster(Context):
                 if status != 0 or not rows or not "Docker version" in rows[0]:
                     missing_docker.append(m)
                 
+                status, _ = run("ssh %s \"rsync --version\"" % credential, read=True, suppressError=True)
+                if status != 0:
+                    missing_rsync.append(m)
+                
+                status, _ = run("ssh %s \"wup\"" % credential, read=True, suppressError=True)
+                if status != 0:
+                    missing_pywup.append(m)
+                
                 status, rows = run("ssh %s \"groups\"" % credential, read=True, suppressError=True)
                 if status != 0 or not rows or not "docker" in rows[0]:
                     missing_docker_group.append(m)
@@ -164,15 +228,20 @@ class Cluster(Context):
         self.diagnose("Missing docker", missing_docker)
         self.diagnose("Missing docker group", missing_docker_group)
         self.diagnose("Docker ps did not work", docker_ps_did_not_work)
+        self.diagnose("Missing rsync", missing_rsync)
+        self.diagnose("Missing pywup", missing_pywup)
     
     
     def diagnose(self, diagnostic, items):
-        if items:
-            rprint(diagnostic)
 
-            for m in items:
-                print("    " + m.hostname)
+        if not items:
+            return
+        
+        rprint(diagnostic)
 
-            print()
+        for m in items:
+            print("    " + m.hostname)
+
+        print()
 
 

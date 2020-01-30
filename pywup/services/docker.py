@@ -6,7 +6,7 @@ import os
 
 def init_and_open(cont_name, bash_init):
     k = quote("".join(["source \"$HOME/.bashrc\" 2> /dev/null \n"] + bash_init))
-    b = quote("bash --init-file <(echo " + k + ")").replace("$", "\\$")
+    b = quote("bash --init-file <(echo " + k + ") || true").replace("$", "\\$")
     return run("docker exec -it " + cont_name + " bash -c " + b)
 
 

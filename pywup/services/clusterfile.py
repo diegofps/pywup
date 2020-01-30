@@ -46,7 +46,9 @@ class Machine:
 
     @property
     def dict(self):
-        return copy.copy(self.__dict__)
+        data = copy.copy(self.__dict__)
+        del data["_credential"]
+        return data
 
     
     @property
@@ -160,6 +162,7 @@ class ClusterFile:
     def dict(self):
         data = copy.copy(self.__dict__)
         del data["_ClusterFile__env"]
+        del data["machines"]
 
         archs = data["archs"]
 

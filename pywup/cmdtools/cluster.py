@@ -32,27 +32,39 @@ def open(cmd, args):
 def exec(cmd, args):
     p = Params(cmd, args, limit_parameters=False)
     p.map("command", 1, None, "Command to be executed", mandatory=True)
+    p.map("--m", 1, None, "Execute command on a single machine")
 
     if p.run():
-        Cluster().exec(p._input_parameters)
+        if p.__m:
+            Cluster().exec_single(p.command, p.__m)
+        else:
+            Cluster().exec_all(p.command)
 
 
 def send(cmd, args):
     p = Params(cmd, args)
     p.map("src", 1, None, "Source path to the file inside the host", mandatory=True)
-    p.map("dst", 1, None, "Destination path inside the remote machines", mandatory=True)
+    p.map("dst", 1, None, "Destination path inside the remote machines")
+    p.map("--m", 1, None, "Sends the file to a single machine")
 
     if p.run():
-        Cluster().send(p.src, p.dst)
+        if p.__m:
+            Cluster().send_single(p.__m, p.src, p.dst)
+        else:
+            Cluster().send_all(p.src, p.dst)
 
 
 def get(cmd, args):
     p = Params(cmd, args)
-    p.map("src", 1, None, "Source path to the files inside the remote machines", mandatory=True)
-    p.map("dst", 1, None, "Destination path to a folder in the host", mandatory=True)
+    p.map("src", 1, None, "Path to the source files inside the remote machines", mandatory=True)
+    p.map("dst", 1, None, "Destination folder inside the host to store the received files, each machine will have its own folder")
+    p.map("--m", 1, None, "Gets the file from a single machine")
 
     if p.run():
-        Cluster().get(p.src, p.dst)
+        if p.__m:
+            Cluster().get_single(p.__m, p.src, p.dst)
+        else:
+            Cluster().get_all(p.src, p.dst)
 
 
 def doctor(cmd, args):
