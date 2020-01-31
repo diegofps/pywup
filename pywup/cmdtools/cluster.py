@@ -91,6 +91,6 @@ def main(cmd, args):
     r.map("send", send, "Sends a file or directory to all remote machines")
     r.map("get", get, "Retrieve a file or directory from the remote machines")
     r.map("doctor", doctor, "Fixes common SSH validations")
-    r.map("pbash", pbash, "Parallel bash")
+    r.map("pbash", pbash, "A really basic parallel bash")
     
     r.run()

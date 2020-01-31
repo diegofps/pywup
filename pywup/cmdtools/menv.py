@@ -65,10 +65,10 @@ def do_ip(cmd, args):
         for a, b in Simulation().ip():
             print(a, "=>", b)
 
-def do_status(cmd, args):
+def do_ls(cmd, args):
     p = Params(cmd, args)
     if p.run():
-        status = Simulation().status()
+        status = Simulation().ls()
         print_table(status)
 
 
@@ -81,7 +81,7 @@ def main(cmd, args):
     r.map("stop", do_stop, "Stops all nodes in the current cluster")
     r.map("open", do_open, "Opens one of the cluster nodes")
     r.map("lsc", do_ls_clusters, "Lists all simulated clusters")
-    r.map("ls", do_ls_nodes, "Lists all nodes in this cluster")
-    r.map("status", do_status, "Display node's info like name, ip, running, etc")
+    r.map("lsn", do_ls_nodes, "Lists all nodes in this cluster")
+    r.map("ls", do_ls, "Display node's info like name, ip, running, etc")
     
     r.run()

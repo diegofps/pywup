@@ -12,6 +12,7 @@ class Machine:
 
     def __init__(self):
         self.tags = []
+        self.params = {}
         self.hostname = ""
         self.procs = 1
         self.user = None
@@ -28,6 +29,8 @@ class Machine:
         
         if "tags" in y:
             self.tags = y["tags"]
+        if "params" in y:
+            self.params = y["params"]
         if "procs" in y:
             self.procs = y["procs"]
         if "user" in y:
@@ -42,6 +45,10 @@ class Machine:
     
     def add_tag(self, name):
         self.tags.append(name)
+
+
+    def add_param(self, key, value):
+        self.params[key] = value
 
 
     @property

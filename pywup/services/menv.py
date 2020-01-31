@@ -73,7 +73,7 @@ class Simulation(Context):
         docker.stop(self.docker_clusterfile().docker_nodes)
 
 
-    def status(self):
+    def ls(self):
         nodes = self.docker_clusterfile().docker_nodes
 
         names = ["NAME"] + nodes

@@ -1,9 +1,11 @@
 from pywup.services.system import run, error, quote, colors, expand_path, rprint, yprint, wprint, quote_single
 from pywup.services.clusterfile import ClusterFile
+from pywup.services.pbash import PBash, Term
 from pywup.services.context import Context
 
 from collections import defaultdict
 
+import copy
 import sys
 import os
 
@@ -30,6 +32,7 @@ class Cluster(Context):
             m.add_tag("nvidia_1060_3gb_gpu")
             m.add_tag("32gb_ram")
             m.add_tag("ryzen1700")
+            m.add_param("ID", str(i))
             m.hostname = "192.168.0." + str(i)
             m.user = "wup"
             m.procs = 16
@@ -40,6 +43,7 @@ class Cluster(Context):
             m = c.create_machine("aarch64", name)
             m.add_tag("rasp3")
             m.add_tag("1gb_ram")
+            m.add_param("ID", str(i))
             m.hostname = "192.168.0." + str(i)
             m.user = "wup"
             m.procs = 4
@@ -166,70 +170,27 @@ class Cluster(Context):
 
 
     def pbash(self):
-
-        from subprocess import Popen, PIPE
-        import shlex
-        import sys
-
-        secret = "jklaslkvcjkasdw78345jksdfl;bvcjkn45378sdjkvcdl;bgfrl;dsmn4356sdfhjgm4567dfvkdfg;lbvc645kxcv768dfvj65vbckl435"
-        print_break = ("\necho '" + secret + "'\n").encode()
         cluster = self.clusterfile()
-        conns = []
-        current_dir = "/"
+        terms = []
+        i = 0
 
-        for m in cluster.all_machines():
-            args = shlex.split("ssh -t %s bash" % m.credential)
-            ps = Popen(args, stdout=PIPE, stdin=PIPE)
-            conns.append(ps)
+        for name, m in cluster.machines.items():
+            params = copy.copy(m.params)
+            params["WUP_ID"]=str(i)
+            params["WUP_NAME"]=name
+            params["WUP_USER"]=m.user
+            params["WUP_PORT"]=m.port
+            params["WUP_HOSTNAME"]=m.hostname
+            params["WUP_BUILD"]="1" if m.build else "0"
+            params["WUP_DEPLOY"]="1" if m.deploy else "0"
 
-        def insert(cmd, conns):
-            outputs = []
+            initrc = [("%s=\"%s\"\n" % d).encode() for d in params.items()]
+            initrc.insert(0, b"ssh " + m.credential.encode() + b"\n")
 
-            for c in conns:
-                c.stdin.write(cmd.encode())
-                c.stdin.write(print_break)
-            
-            for c in conns:
-                output = []
+            terms.append(Term(name, initrc))
+            i += 1
 
-                while True:
-                    line = c.stdout.readline().decode("utf-8")
-                    
-                    if line.startswith(secret):
-                        break
-                    else:
-                        output.append(line)
-                
-                outputs.append(output)
-
-            return outputs
-
-        def print_outputs(outputs):
-            for i, output in enumerate(outputs):
-
-                print()
-                print(colors.blue("[%d]" % i))
-
-                for line in output:
-                    sys.stdout.write(line)
-        
-        outputs = insert("cd /", conns)
-        print_outputs(outputs)
-
-        while True:
-            try:
-                sys.stdout.write("%s %s $ " % (cluster.name, current_dir))
-                command = sys.stdin.readline()
-
-                if command == "exit":
-                    break
-
-                outputs = insert(command, conns)
-                print_outputs(outputs)
-                
-            except KeyboardInterrupt:
-                break
-
+        PBash(terms).loop()
 
     def doctor(self):
 
