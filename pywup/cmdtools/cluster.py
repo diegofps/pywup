@@ -76,9 +76,10 @@ def doctor(cmd, args):
 
 def pbash(cmd, args):
     p = Params(cmd, args)
+    p.map("--v", 0, None, "Prints sdtout from the first machine. Usefull when issuing interactive commands")
 
     if p.run():
-        Cluster().pbash()
+        Cluster().pbash(p.__v)
 
 
 def main(cmd, args):

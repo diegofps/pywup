@@ -169,7 +169,7 @@ class Cluster(Context):
             self.get_single(name, src, dst, m=m)
 
 
-    def pbash(self):
+    def pbash(self, verbose):
         cluster = self.clusterfile()
         terms = []
         i = 0
@@ -197,7 +197,7 @@ class Cluster(Context):
             terms.append(Term(name, initrc))
             i += 1
 
-        PBash(terms).loop()
+        PBash(terms, verbose).loop()
     
 
     def doctor(self):

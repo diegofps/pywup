@@ -24,8 +24,9 @@ class Term:
 
 class PBash:
 
-    def __init__(self, terms):
+    def __init__(self, terms, verbose=False):
 
+        self.verbose = verbose
         self.terms = terms
         self.command = "bash"
         
@@ -51,6 +52,21 @@ class PBash:
             for line in term.initrc:
                 os.write(term.master, line + b"\n")
     
+
+    def parse_pcmd(self, pcmd):
+        if pcmd.startswith("help"):
+            print("Help")
+        
+        elif pcmd.startswith("v="):
+            cells = pcmd.split("=")
+            c = cells[1][0]
+            self.verbose = c == "t" or c == "1" or c == "y"
+            print("Verbose mode:", self.verbose)
+
+        else:
+            rprint("Unknown pbash command: " + pcmd)
+
+
     def loop(self):
         
         import readline
@@ -61,6 +77,11 @@ class PBash:
                 cmd = input(">> ").strip()
                 sys.stdout.write(colors.RESET)
                 sys.stdout.flush()
+
+                p = cmd.find("##")
+                if p != -1:
+                    self.parse_pcmd(cmd[p+2:].strip())
+                    cmd = cmd[:p]
 
                 if cmd == "":
                     continue
@@ -108,22 +129,29 @@ class PBash:
         masters = [t.master for t in self.terms]
         starts  = [1 for _ in self.terms]
         stops   = [1 for _ in self.terms]
+        masters.append(sys.stdin)
 
         while sum(starts) != 0 or sum(stops) != 0:
             r, w, e = select.select(masters, [], [])
         
-            for i, term in enumerate(self.terms):
-                if term.master in r:
-                    found_start, found_stop = self.parse(term)
+            if sys.stdin in r:
+                d = os.read(sys.stdin.fileno(), 10240)
+                for term in self.terms:
+                    os.write(term.master, d)
 
-                    if found_start:
-                        starts[i] = 0
-                    
-                    if found_stop:
-                        stops[i] = 0
-                    
-                    break
-            
+            else:
+                for i, term in enumerate(self.terms):
+                    if term.master in r:
+                        found_start, found_stop = self.parse(term, self.verbose and i==0)
+
+                        if found_start:
+                            starts[i] = 0
+                        
+                        if found_stop:
+                            stops[i] = 0
+                        
+                        break
+        
             #print("STARTS", sum(starts), "STOPS", sum(stops))
 
     def display_outputs_0(self):
@@ -175,6 +203,7 @@ class PBash:
             if not key in hash_to_outputs:
                 hash_to_outputs[key] = data
 
+        print()
         first = True
         for key, data in hash_to_outputs.items():
             names = hash_to_names[key]
@@ -193,13 +222,12 @@ class PBash:
                 os.write(sys.stdout.fileno(), row)
 
 
-
-    def parse(self, term):
+    def parse(self, term, verbose):
         
         o = os.read(term.master, 10240)
 
-        #if term.name == "wclus__fake__node__0":
-        #    os.write(sys.stdout.fileno(), o)
+        if verbose:
+            os.write(sys.stdout.fileno(), o)
 
         if not o:
             return False, False
