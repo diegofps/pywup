@@ -187,7 +187,7 @@ class PBash:
                 first = False
             else:
                 print()
-                
+            
             if len(hash_to_outputs) == 1:
                 yprint("[ALL]")
             else:

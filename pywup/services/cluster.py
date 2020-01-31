@@ -175,7 +175,8 @@ class Cluster(Context):
         i = 0
 
         for name, m in cluster.machines.items():
-            params = copy.copy(m.params)
+            params = {}
+
             params["WUP_ID"]=str(i)
             params["WUP_NAME"]=name
             params["WUP_USER"]=m.user
@@ -184,9 +185,15 @@ class Cluster(Context):
             params["WUP_BUILD"]="1" if m.build else "0"
             params["WUP_DEPLOY"]="1" if m.deploy else "0"
 
+            for key, value in m.params.items():
+                params["PARAM_" + key] = value
+
+            for tag in m.tags:
+                params["TAG_" + tag] = "1"
+
             initrc = [("%s=\"%s\"\n" % d).encode() for d in params.items()]
             initrc.insert(0, b"ssh " + m.credential.encode() + b"\n")
-
+            
             terms.append(Term(name, initrc))
             i += 1
 
