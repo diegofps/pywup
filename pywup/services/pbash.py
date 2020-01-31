@@ -3,12 +3,9 @@ from collections import defaultdict
 from subprocess import Popen
 
 import hashlib
-import termios
-import string
 import select
 import shlex
 import sys
-import tty
 import pty
 import os
 
@@ -31,7 +28,6 @@ class PBash:
 
         self.terms = terms
         self.command = "bash"
-        #self.wup_env_open = b"/home/diego/Sources/pywup/pywup/wup.py env open\n"
         
         self.start_secret = b"f897473fkjree78wefkfw89743jurewjlkhwufwe89343f"
         self.print_start_secret_cmd = b"echo '%s'" % self.start_secret
@@ -53,7 +49,7 @@ class PBash:
             
         for term in self.terms:
             for line in term.initrc:
-                os.write(term.master, line)
+                os.write(term.master, line + b"\n")
     
     def loop(self):
         

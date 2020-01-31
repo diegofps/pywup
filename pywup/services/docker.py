@@ -70,26 +70,32 @@ def parse_volumes(volumes, extra_volumes):
 
 
 def build_single(cont_name, e, extra_volumes=[]):
-    createCmd = "docker run -i --name tmp"
+    create_container("tmp", e.flags, e.build_volumes, extra_volumes, e.expose, e.map_ports, e.base)
+    exec("tmp", e.bashrc, e.full_build, attach=True)
     
-    if e.build_volumes:
-        createCmd += " -v " + " -v ".join(parse_volumes(e.build_volumes, extra_volumes))
-    
-    if e.expose:
-        createCmd += " --expose=" + " --expose=".join(e.expose)
-
-    if e.map_ports:
-        createCmd += " -p " + " -p".join(e.map_ports)
-
-    createCmd += " " + e.base
-
-    rm_container("tmp")
-
-    cmds = e.bashrc + e.full_build
-    run(createCmd, write=cmds)
-
     rm_container(cont_name)
     rename_container("tmp", cont_name)
+
+
+def create_container(cont_name, flags, volumes, extra_volumes, expose, map_ports, base_name):
+    createCmd = "docker run -d -i --name " + cont_name
+
+    if "privileged" in flags:
+        createCmd += " --privileged"
+    
+    if volumes:
+        createCmd += " -v " + " -v ".join(parse_volumes(volumes, extra_volumes))
+    
+    if expose:
+        createCmd += " --expose=" + " --expose=".join(expose)
+
+    if map_ports:
+        createCmd += " -p " + " -p".join(map_ports)
+    
+    createCmd += " " + base_name
+
+    rm_container(cont_name)
+    run(createCmd, write=["\n "])
 
 
 def build_with_commits(cont_name, img_name, e, fromCommit=None, extra_volumes=[], allVolumes=False):
@@ -102,18 +108,6 @@ def build_with_commits(cont_name, img_name, e, fromCommit=None, extra_volumes=[]
         volumes = e.deploy_volumes + e.build_volumes
     else:
         volumes = e.build_volumes
-
-    # Prefix for creating the container
-    createCmd = "docker run -i --name tmp"
-    
-    if volumes:
-        createCmd += " -v " + " -v ".join(parse_volumes(volumes, extra_volumes))
-    
-    if e.expose:
-        createCmd += " --expose=" + " --expose=".join(e.expose)
-
-    if e.map_ports:
-        createCmd += " -p " + " -p".join(e.map_ports)
 
     # Here
     restore_point = None
@@ -149,19 +143,22 @@ def build_with_commits(cont_name, img_name, e, fromCommit=None, extra_volumes=[]
 
     if restore_point is None:
         yprint("Starting from base image", e.base)
-        createCmd += " " + e.base
         restore_point = 0
+        create_container("tmp", e.flags, volumes, extra_volumes, e.expose, e.map_ports, e.base)
+
+        if e.get_bash is not None:
+            run("docker exec -t tmp %s" % e.get_bash)
+
 
     else:
         for i in range(restore_point):
             yprint("Skipping migration", e.commits[i].name)
 
         yprint("Recovering snapshot", e.commits[restore_point].name, "...")
-        createCmd += " " + e.commits[restore_point].commit_name
+        base = e.commits[restore_point].commit_name
+        create_container("tmp", e.flags, volumes, extra_volumes, e.expose, e.map_ports, base)
         restore_point += 1
-
-    rm_container("tmp")
-    run(createCmd, write=e.bashrc)
+    
     start_container("tmp", e, skip_start=True)
 
     for i in range(restore_point, len(e.commits)):
@@ -339,24 +336,10 @@ def deploy(img_name, cont_name, e, extra_volumes=[], allVolumes=False):
     else:
         volumes = e.deploy_volumes
 
-    createCmd = "docker run -i --name tmp"
-
-    if volumes:
-        createCmd += " -v " + " -v ".join(parse_volumes(volumes, extra_volumes))
+    create_container("tmp", e.flags, volumes, extra_volumes, e.expose, e.map_ports, img_name)
+    exec("tmp", e.bashrc, e.deploy, attach=True)
+    run_start("tmp", e, attach=True)
     
-    if e.expose:
-        createCmd += " --expose=" + " --expose=".join(e.expose)
-
-    if e.map_ports:
-        createCmd += " -p " + " -p".join(e.map_ports)
-
-    createCmd += " " + img_name
-
-    rm_container("tmp")
-
-    cmds = e.bashrc + e.deploy
-    run(createCmd, write=cmds)
-
     rm_container(cont_name)
     rename_container("tmp", cont_name)
 

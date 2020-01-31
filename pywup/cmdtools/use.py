@@ -1,6 +1,7 @@
+from pywup.services.system import Params, colors, expand_path
 from pywup.services.preferences import Preferences
-from pywup.services.system import Params, colors
 
+import sys
 import os
 
 
@@ -41,16 +42,29 @@ def main(cmd, args):
         pref.save()
 
         if params.__show:
+            print()
+
             show = lambda a,b: print(colors.white(a), colors.green(b) if b else colors.red("None"))
 
             show("env_name:", pref.env_name)
             show("env_filepath:", pref.env_filepath)
+            print()
 
             show("cluster_name:", pref.cluster_name)
-            show("cluster_filepath:", pref.cluster_filepath)
-            
             show("cluster_env_name:", pref.cluster_env_name)
+
+            show("cluster_filepath:", pref.cluster_filepath)
             show("cluster_env_filepath:", pref.cluster_env_filepath)
-            
+            print()
+
             show("arch_name:", pref.arch_name)
+
+            sys.stdout.write(colors.white("State: "))
+            try:
+                with open(expand_path("~/.wup/state"), "r") as fin:
+                    print(colors.green(fin.readline()))
+            except FileNotFoundError:
+                print(colors.red("None"))
+
+            print()
             

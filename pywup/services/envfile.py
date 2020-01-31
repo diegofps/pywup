@@ -115,6 +115,8 @@ class EnvFile:
         self.bashrc = []
 
         self.base = "ubuntu:bionic"
+        self.get_bash = None
+        self.flags = set()
         self.workdir = "/"
         self.run = "ls"
         self.map_ports = []
@@ -144,6 +146,12 @@ class EnvFile:
 
         if "BASE" in variables:
             self.base = variables["BASE"]
+        
+        if "GETBASH" in variables:
+            self.get_bash = variables["GETBASH"]
+        
+        if "FLAGS" in variables:
+            self.flags = set(variables["FLAGS"].split(","))
         
         if "WORKDIR" in variables:
             self.workdir = variables["WORKDIR"]

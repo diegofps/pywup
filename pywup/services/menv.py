@@ -49,9 +49,6 @@ class Simulation(Context):
         self.pref.cluster_env_filepath = c.env.filepath
         self.pref.save()
 
-        wprint("Starting containers")
-        self.start()
-
 
     def rm(self):
         cluster = self.docker_clusterfile()

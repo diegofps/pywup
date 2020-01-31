@@ -177,13 +177,13 @@ class Cluster(Context):
         for name, m in cluster.machines.items():
             params = {}
 
-            params["WUP_ID"]=str(i)
-            params["WUP_NAME"]=name
-            params["WUP_USER"]=m.user
-            params["WUP_PORT"]=m.port
-            params["WUP_HOSTNAME"]=m.hostname
-            params["WUP_BUILD"]="1" if m.build else "0"
-            params["WUP_DEPLOY"]="1" if m.deploy else "0"
+            params["WUP_ID"] = str(i)
+            params["WUP_NAME"] = name
+            params["WUP_USER"] = m.user
+            params["WUP_PORT"] = m.port
+            params["WUP_HOSTNAME"] = m.hostname
+            params["WUP_BUILD"] = "1" if m.build else "0"
+            params["WUP_DEPLOY"] = "1" if m.deploy else "0"
 
             for key, value in m.params.items():
                 params["PARAM_" + key] = value
@@ -191,13 +191,14 @@ class Cluster(Context):
             for tag in m.tags:
                 params["TAG_" + tag] = "1"
 
-            initrc = [("%s=\"%s\"\n" % d).encode() for d in params.items()]
-            initrc.insert(0, b"ssh " + m.credential.encode() + b"\n")
+            initrc = [("%s=\"%s\"" % d).encode() for d in params.items()]
+            initrc.insert(0, b"ssh " + m.credential.encode())
             
             terms.append(Term(name, initrc))
             i += 1
 
         PBash(terms).loop()
+    
 
     def doctor(self):
 
@@ -236,8 +237,13 @@ class Cluster(Context):
                 sanity_check.append(m)
 
             else:
-                status, rows = run("ssh %s \"docker -version\"" % credential, read=True, suppressError=True)
-                if status != 0 or not rows or not "Docker version" in rows[0]:
+                found_docker = False
+                for candidate in ["/usr/local/bin/docker", "/usr/bin/docker"]:
+                    status, rows = run("ssh %s \"%s --version\"" % (credential, candidate), read=True, suppressError=True)
+                    if status == 0:
+                        found_docker = True
+                        break
+                if not found_docker:
                     missing_docker.append(m)
                 
                 status, _ = run("ssh %s \"rsync --version\"" % credential, read=True, suppressError=True)
