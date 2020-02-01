@@ -1,4 +1,6 @@
+from pywup.services.burn import Experiment, ListVariable, GeometricVariable, ArithmeticVariable
 from pywup.services.system import error, Params, Route, print_table
+from pywup.services.cluster_burn import ClusterBurn
 from pywup.services.cluster import Cluster
 
 import os
@@ -82,6 +84,61 @@ def pbash(cmd, args):
         Cluster().pbash(p.__v)
 
 
+def burn(cmd, args):
+
+    current_experiment = None
+    default_variables = []
+    default_workdir = None
+    output_dir = "./burn"
+    experiments = []
+    num_runs = 1
+
+    while args.has_next():
+        cmd = args.pop_cmd()
+
+        if cmd == "--e":
+            current_experiment = Experiment()
+            experiments.append(current_experiment)
+        
+        elif cmd == "--w":
+            default_workdir = args.pop_parameter()
+        
+        elif cmd == "--o":
+            output_dir = args.pop_parameter()
+        
+        elif cmd == "--runs":
+            num_runs = int(args.pop_parameter())
+        
+        elif cmd == "--c":
+            if current_experiment is None:
+                error("You must start an experiment first: --e <EXPERIMENT_NAME>")
+            else:
+                current_experiment.add_command(args.pop_parameter())
+        
+        elif cmd.startswith("--v"):
+            if cmd == "--v":
+                v = ListVariable(args)
+
+            elif cmd == "--va":
+                v = ArithmeticVariable(args)
+            
+            elif cmd == "--vg":
+                v = GeometricVariable(args)
+
+            else:
+                error("Unknown variable type:", cmd)
+
+            if current_experiment is None:
+                default_variables.append(v)
+            else:
+                current_experiment.add_variable(v)
+        
+        else:
+            error("Unknown parameter:", cmd)
+    
+    ClusterBurn(num_runs, output_dir, default_workdir, default_variables, experiments).start()
+
+
 def main(cmd, args):
     r = Route(args, cmd)
 
@@ -93,5 +150,6 @@ def main(cmd, args):
     r.map("get", get, "Retrieve a file or directory from the remote machines")
     r.map("doctor", doctor, "Fixes common SSH validations")
     r.map("pbash", pbash, "A really basic parallel bash")
+    r.map("burn", burn, "Runs distributed experiments")
     
     r.run()
