@@ -6,49 +6,6 @@ import re
 import os
 
 
-class colors:
-    RESET="\033[0m"
-    RED="\033[1;31m"
-    GREEN="\033[1;32m"
-    YELLOW="\033[1;33m"
-    BLUE="\033[1;34m"
-    PURPLE="\033[1;35m"
-    CYAN="\033[1;36m"
-    WHITE="\033[1;37m"
-
-    @staticmethod
-    def yellow(str):
-        return colors.YELLOW + str + colors.RESET
-    
-    @staticmethod
-    def red(str):
-        return colors.RED + str + colors.RESET
-    
-    @staticmethod
-    def green(str):
-        return colors.GREEN + str + colors.RESET
-    
-    @staticmethod
-    def blue(str):
-        return colors.BLUE + str + colors.RESET
-    
-    @staticmethod
-    def purple(str):
-        return colors.PURPLE + str + colors.RESET
-    
-    @staticmethod
-    def cyan(str):
-        return colors.CYAN + str + colors.RESET
-    
-    @staticmethod
-    def white(str):
-        return colors.WHITE + str + colors.RESET
-
-    @staticmethod
-    def normal(str):
-        return colors.RESET + str + colors.RESET
-
-
 def filename(filepath):
     return os.path.splitext(os.path.basename(filepath))[0]
 
@@ -95,6 +52,9 @@ def gprint(*args):
 
 def rprint(*args):
     print(colors.RED + " ".join(args) + colors.RESET)
+
+def cprint(*args):
+    print(colors.CYAN + " ".join(args) + colors.RESET)
 
 
 def quote(str):
@@ -224,11 +184,6 @@ def run(cmds, write=None, read=False, suppressInterruption=False, suppressError=
             raise e
 
 
-class WupError(Exception):
-    def __init__(self, message=None):
-        self.message = message
-
-
 def abort(*args):
     if args:
         print(*args, file=sys.stderr)
@@ -240,6 +195,108 @@ def error(*args):
         raise WupError(" ".join(args))
     else:
         raise WupError()
+
+
+def warn(*args):
+    yprint("|WARNING|", *args)
+
+
+def info(*args):
+    cprint("|INFO|", *args)
+
+
+def readlines(self, master, lines, verbose=False):
+    
+    o = os.read(master, 10240)
+
+    if verbose:
+        os.write(sys.stdout.fileno(), o)
+
+    if not o:
+        return 0, 0
+    
+    last = 0
+    i = 0
+
+    linebreak = ord('\n')
+    result = []
+
+    while i != len(o):
+        if o[i] == linebreak:
+            result.append(o[last:i+1])
+            last = i + 1
+        
+        i += 1
+    
+    result.append(o[last:i])
+
+    start_search = max(len(lines) - 1, 0)
+
+    if lines:
+        lines[-1] = lines[-1] + result[0]
+        lines.extend(result[1:])
+    else:
+        lines.extend(result)
+    
+    return start_search, len(lines)
+
+
+def read_csv(filepath):
+    import numpy as np
+    import csv
+
+    with open(filepath, "r") as fin:
+        reader = csv.reader(fin, delimiter=';')
+        data = [cells for cells in reader]
+        return np.array(data, dtype=object)
+
+
+class WupError(Exception):
+    def __init__(self, message=None):
+        self.message = message
+
+
+class colors:
+    RESET="\033[0m"
+    RED="\033[1;31m"
+    GREEN="\033[1;32m"
+    YELLOW="\033[1;33m"
+    BLUE="\033[1;34m"
+    PURPLE="\033[1;35m"
+    CYAN="\033[1;36m"
+    WHITE="\033[1;37m"
+
+    @staticmethod
+    def yellow(str):
+        return colors.YELLOW + str + colors.RESET
+    
+    @staticmethod
+    def red(str):
+        return colors.RED + str + colors.RESET
+    
+    @staticmethod
+    def green(str):
+        return colors.GREEN + str + colors.RESET
+    
+    @staticmethod
+    def blue(str):
+        return colors.BLUE + str + colors.RESET
+    
+    @staticmethod
+    def purple(str):
+        return colors.PURPLE + str + colors.RESET
+    
+    @staticmethod
+    def cyan(str):
+        return colors.CYAN + str + colors.RESET
+    
+    @staticmethod
+    def white(str):
+        return colors.WHITE + str + colors.RESET
+
+    @staticmethod
+    def normal(str):
+        return colors.RESET + str + colors.RESET
 
 
 class Args:
@@ -287,16 +344,6 @@ class Args:
         if not self.has_cmd():
             raise RuntimeError("Wrong argument, expecting a command: ", self.sneak())
         return self.pop()
-
-
-def read_csv(filepath):
-    import numpy as np
-    import csv
-
-    with open(filepath, "r") as fin:
-        reader = csv.reader(fin, delimiter=';')
-        data = [cells for cells in reader]
-        return np.array(data, dtype=object)
 
 
 class RouteCmd:
