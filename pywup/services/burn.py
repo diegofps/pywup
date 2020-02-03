@@ -1,14 +1,40 @@
+from pywup.services.system import error
+
+import copy
 
 class Experiment:
 
     def __init__(self):
-        self.variables = []
+        self.work_dir = None
+        self.variables = {}
+        self.commands = []
+    
 
     def add_variable(self, v):
-        self.variables.append(v)
+        if v.get_name() in self.variables:
+            error("This variable is already defined in this environment")
+        else:
+            self.variables[v.get_name()] = v
+
 
     def add_command(self, c):
-        self.variables.append(c)
+        self.commands.append(c)
+
+
+    def get_variables(self, default_variables):
+        variables = copy.copy(default_variables)
+
+        for v in self.variables:
+            variables[v.get_name()] = v
+        
+        return variables
+
+    
+    def get_work_dir(self, default_workdir):
+        if self.work_dir is None:
+            return default_workdir
+        else:
+            return self.work_dir
 
 
 class ListVariable:

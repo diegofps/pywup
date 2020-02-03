@@ -69,15 +69,17 @@ class Msg:
 
 class Task:
 
-    def __init__(self, experiment_idd, perm_idd, run_idd, cmd_idd, combination, cmdline):
+    def __init__(self, output_dir, work_dir, experiment_idd, perm_idd, run_idd, cmd_idd, combination, cmdline):
 
         self.experiment_idd = experiment_idd
+        self.combination = combination
+        self.output_dir = output_dir
+        self.work_dir = work_dir
         self.perm_idd = perm_idd
+        self.assigned_to = None
+        self.cmdline = cmdline
         self.run_idd = run_idd
         self.cmd_idd = cmd_idd
-        self.combination = combination
-        self.cmdline = cmdline
-        self.assigned_to = None
         self.tries = 0
     
     
@@ -94,16 +96,14 @@ class SSHConnector:
     pass
 
 
+class BashConnector:
+    pass
+
+
 class SSHTunnelConnector:
 
-    def __init__(self, machine, arch_name, machine_name, arch_idd, machine_idd, global_idd, proc_idd):
+    def __init__(self, machine):
 
-        self.machine_name = machine_name
-        self.machine_idd = machine_idd
-        self.global_idd = global_idd
-        self.arch_name = arch_name
-        self.arch_idd = arch_idd
-        self.proc_idd = proc_idd
         self.machine = machine
 
         # Opens a pseudo-terminal
@@ -170,27 +170,14 @@ class SSHTunnelConnector:
             conn_try += 1
 
 
-    def execute(self, cmds, variables):
-
+    def execute(self, initrc, cmds):
         if type(cmds) is not list:
             cmds = [cmds]
-        
-        def add_variable(name, value):
-            if name not in variables:
-                variables[name] = value
-        
-        add_variable("WUP_MACHINE_NAME", self.machine_name)
-        add_variable("WUP_MACHINE_IDD", self.machine_idd)
-        add_variable("WUP_GLOBAL_IDD", self.global_idd)
-        add_variable("WUP_ARCH_NAME", self.arch_name)
-        add_variable("WUP_ARCH_IDD", self.arch_idd)
-        add_variable("WUP_PROC_IDD", self.proc_idd)
 
         lines = []
         output_start = 0
         output_end = None
-        variables = [b"%s=\"%s\"" % (a.encode(), b.encode()) for a,b in variables]
-        cmd_str = b"%s ; %s ; %s ; %s\n" % (b" ; ".join(variables), ECHO_CMD_ON, b" ; ".join(cmds), ECHO_CMD_OFF)
+        cmd_str = b"%s ; %s ; %s ; %s\n" % (b" ; ".join(initrc), ECHO_CMD_ON, b" ; ".join(cmds), ECHO_CMD_OFF)
 
         os.write(self.master, cmd_str)
         
@@ -229,17 +216,22 @@ class SSHTunnelConnector:
 
 class Proc:
 
-    def __init__(self, connection_builder, proc_idd, output_folder):
+    def __init__(self, connection_builder, arch_name, machine_name, arch_idd, machine_idd, global_idd, proc_idd):
+
         self.connection_builder = connection_builder
-        self.output_folder = output_folder
+        self.machine_name = machine_name
+        self.machine_idd = machine_idd
+        self.global_idd = global_idd
+        self.arch_name = arch_name
+        self.arch_idd = arch_idd
         self.proc_idd = proc_idd
+        self.process = None
 
 
     def start(self, queue_master):
         self.queue = Queue()
-
-        p = Process(target=self.run, args=(self.queue, queue_master))
-        p.start()
+        self.process = Process(target=self.run, args=(self.queue, queue_master))
+        self.process.start()
 
 
     def run(self, queue_in, queue_master):
@@ -278,23 +270,41 @@ class Proc:
     def execute(self, msg_in, conn):
         task = msg_in.task
 
-        variables = {name:value for name, value in task.combination}
-        cmd = task.cmdline
+        # Prepare the initrc
+        variables = {
+            "WUP_MACHINE_NAME": self.machine_name,
+            "WUP_MACHINE_IDD": self.machine_idd,
+            "WUP_GLOBAL_IDD": self.global_idd,
+            "WUP_ARCH_NAME": self.arch_name,
+            "WUP_ARCH_IDD": self.arch_idd,
+            "WUP_PROC_IDD": self.proc_idd,
+            "WUP_WORK_DIR": task.work_dir
+        }
+
+        for name, value in task.combination.items():
+            variables[name] = value
+
+        initrc = [b"%s=\"%s\"" % (a.encode(), b.encode()) for a,b in variables]
+        initrc.insert(0, b"cd \"%s\"" % task.work_dir)
 
         # Execute this task
-        success, output, status = conn.execute(cmd, variables)
+        success, output, status = conn.execute(initrc, task.cmdline)
 
         # Create the task folder
-        folderpath = os.path.join(self.output_folder, "tasks", str(task.cmd_idd))
-        os.makedirs(folderpath)
+        os.makedirs(task.output_dir)
 
         # Dump task info
-        filepath = os.path.join(folderpath, "task.yml")
+        task_info = {
+            "exit_code": status,
+            "variables": variables
+        }
+
+        filepath = os.path.join(task.output_dir, "info.yml")
         with open(filepath, "w") as fout:
-            yaml.dump(data, fout, default_flow_style=False)
+            yaml.dump(task_info, fout, default_flow_style=False)
         
         # Dump task output
-        filepath = os.path.join(folderpath, "task.output")
+        filepath = os.path.join(task.output_dir, "output.txt")
         with open(filepath, "w") as fout:
             fout.writelines(output)
         
@@ -358,7 +368,9 @@ class ClusterBurn(Context):
 
         for e in self.experiments:
             experiment_idd += 1
-            variables = e.get_variables(self.default_variables)
+
+            variables = [v for _, v in e.get_variables(self.default_variables).items()]
+            work_dir = e.get_work_dir(self.default_workdir)
 
             for combination in combine_variables(variables):
                 perm_idd += 1
@@ -369,7 +381,10 @@ class ClusterBurn(Context):
                     for cmdline in e.commands:
                         cmd_idd += 1
 
-                        task = Task(experiment_idd, perm_idd, run_idd, cmd_idd, combination, cmdline)
+                        output_dir = os.path.join(self.output_dir, "tasks", str(cmd_idd))
+                        os.makedirs(output_dir, exist_ok=True)
+
+                        task = Task(output_dir, work_dir, experiment_idd, perm_idd, run_idd, cmd_idd, combination, cmdline)
                         tasks.append(task)
         
         return tasks
@@ -388,8 +403,9 @@ class ClusterBurn(Context):
                 machine_idd += 1
 
                 for proc_idd in range(machine.procs):
-                    builder = lambda: SSHTunnelConnector(machine, arch_name, machine_name, arch_idd, machine_idd, global_idd, proc_idd)
-                    proc = Proc(builder, proc_idd)
+                    builder = lambda: SSHTunnelConnector(machine)
+
+                    proc = Proc(builder, arch_name, machine_name, arch_idd, machine_idd, global_idd, proc_idd)
                     procs.append(proc)
                     global_idd += 1
         

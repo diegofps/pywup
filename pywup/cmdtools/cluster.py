@@ -1,6 +1,5 @@
 from pywup.services.burn import Experiment, ListVariable, GeometricVariable, ArithmeticVariable
 from pywup.services.system import error, Params, Route, print_table
-from pywup.services.cluster_burn import ClusterBurn
 from pywup.services.cluster import Cluster
 
 import os
@@ -85,9 +84,10 @@ def pbash(cmd, args):
 
 
 def burn(cmd, args):
+    from pywup.services.cluster_burn import ClusterBurn
 
     current_experiment = None
-    default_variables = []
+    default_variables = {}
     default_workdir = None
     output_dir = "./burn"
     experiments = []
@@ -101,7 +101,10 @@ def burn(cmd, args):
             experiments.append(current_experiment)
         
         elif cmd == "--w":
-            default_workdir = args.pop_parameter()
+            if current_experiment is None:
+                default_workdir = args.pop_parameter()
+            else:
+                current_experiment.work_dir = args.pop_parameter()
         
         elif cmd == "--o":
             output_dir = args.pop_parameter()
@@ -129,7 +132,10 @@ def burn(cmd, args):
                 error("Unknown variable type:", cmd)
 
             if current_experiment is None:
-                default_variables.append(v)
+                if v.get_name() in default_variables:
+                    error("Default variable defined more than once:", v.get_name())
+                else:
+                    default_variables[v.get_name()] = v
             else:
                 current_experiment.add_variable(v)
         
