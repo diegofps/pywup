@@ -96,10 +96,10 @@ class Cluster(Context):
         if type(cmd) is not list:
             cmd = [cmd]
         
-        cmds = quote_single("".join(cmd + ["\n"]))
+        cmds = quote_single("".join(cmd))
 
         credential = m.credential
-        status, rows = run("ssh %s %s" % (credential, cmds), read=True)
+        status, rows = run("ssh %s %s\n" % (credential, cmds), read=True)
 
         if verbose:
             if status == 0:

@@ -1,4 +1,4 @@
-from pywup.services.system import expand_path, error, warn, info, readlines
+from pywup.services.system import expand_path, error, warn, info, debug, readlines, colors
 from pywup.services.state_machine import StateMachine
 from pywup.services.context import Context
 from multiprocessing import Process, Queue
@@ -53,39 +53,45 @@ def combine_variables(variables, combination=[]):
             combination.pop()
 
 
-class Msg:
+class Msg(dict):
 
     def __init__(self, action, source=-1):
         self.action = action
         self.source = source
         self.data = {}
     
+    def __setstate__(self, state):
+        self.__dict__ = state
+
+    def __getstate__(self):
+        return self.__dict__
+
     def __getattr__(self, key):
-        return self.data[key]
+        return self[key]
     
     def __setattr__(self, key, value):
-        self.data[key] = value
+        self[key] = value
 
 
 class Task:
 
-    def __init__(self, output_dir, work_dir, experiment_idd, perm_idd, run_idd, cmd_idd, combination, cmdline):
+    def __init__(self, output_dir, work_dir, experiment_idd, perm_idd, run_idd, task_idd, combination, cmdline):
 
         self.experiment_idd = experiment_idd
         self.combination = combination
         self.output_dir = output_dir
         self.work_dir = work_dir
         self.perm_idd = perm_idd
+        self.task_idd = task_idd
         self.assigned_to = None
         self.cmdline = cmdline
         self.run_idd = run_idd
-        self.cmd_idd = cmd_idd
         self.tries = 0
     
     
     def __str__(self):
         comb = ";".join(str(v) for v in self.combination)
-        return "%d %d %d %d %s %s" % (self.experiment_idd, self.perm_idd, self.run_idd, self.cmd_idd, comb, self.cmdline)
+        return "%d %d %d %d %s %s" % (self.experiment_idd, self.perm_idd, self.run_idd, self.task_idd, comb, self.cmdline)
 
 
 class DaemonConnector:
@@ -117,7 +123,7 @@ class SSHTunnelConnector:
 
 
     def start_bash(self):
-        info("Starting bash")
+        debug("Starting bash")
         self.popen = Popen(
                 shlex.shlex("bash"),
                 preexec_fn=os.setsid,
@@ -131,7 +137,7 @@ class SSHTunnelConnector:
         conn_try = 1
 
         while True:
-            print("Connection attempt:", conn_try)
+            debug("Connection attempt:", conn_try)
             os.write(self.master, self.conn_string)
             found_ssh_off = False
             found_ssh_on = False
@@ -148,7 +154,7 @@ class SSHTunnelConnector:
                     warn("Unexpected file descriptor while connecting")
                     continue
                 
-                for i in range(*readlines(self.master, lines, True)):
+                for i in range(*readlines(self.master, lines, verbose=False)):
                     line = lines[i]
 
                     if KEY_SSH_ON in line:
@@ -158,14 +164,14 @@ class SSHTunnelConnector:
                         found_ssh_off = True
                 
                 if found_ssh_on:
-                    info("SSH connection established")
+                    debug("SSH connection established")
                     return
                 
                 if found_ssh_off:
                     warn("SSH connection has failed, trying again")
                     break
 
-            info("Sleeping before next try...")
+            debug("Sleeping before next try...")
             time.sleep(5)
             conn_try += 1
 
@@ -177,7 +183,13 @@ class SSHTunnelConnector:
         lines = []
         output_start = 0
         output_end = None
-        cmd_str = b"%s ; %s ; %s ; %s\n" % (b" ; ".join(initrc), ECHO_CMD_ON, b" ; ".join(cmds), ECHO_CMD_OFF)
+
+        p1 = b" ; ".join(initrc)
+        p2 = ECHO_CMD_ON
+        p3 = b" ; ".join(cmds)
+        p4 = ECHO_CMD_OFF
+
+        cmd_str = b"%s ; %s ; %s ; %s\n" % (p1, p2, p3, p4)
 
         os.write(self.master, cmd_str)
         
@@ -191,47 +203,53 @@ class SSHTunnelConnector:
                 warn("Unexpected file descriptor while searching for command output")
                 continue
 
-            for i in range(*readlines(self.master, lines, True)):
+            for i in range(*readlines(self.master, lines, verbose=False)):
                 line = lines[i]
 
                 if KEY_SSH_OFF in line:
+                    warn("Found KEY_SSH_OFF")
                     self.popen.kill()
                     return False, None, None
                 
                 elif KEY_CMD_ON in line:
+                    #debug("Found KEY_CMD_ON")
                     output_start = i + 1
                 
                 elif KEY_CMD_OFF in line and output_end is None:
+                    #debug("Found KEY_CMD_OFF")
                     output_end = i
             
             if output_end is not None:
-                status = lines[output_end].split()[0] if output_end < len(lines) else "255"
+                status = lines[output_end].split()[0] if output_end < len(lines) else b"255"
                 break
 
-        if status == "0":
+        if status == b"0":
+            #debug("Status is equal to 0")
             return True, lines[output_start:output_end], status
         else:
+            #debug("Status '%s' is not equal to 0 " % status)
             return False, lines[output_start:output_end], status
 
 
 class Proc:
 
-    def __init__(self, connection_builder, arch_name, machine_name, arch_idd, machine_idd, global_idd, proc_idd):
+    def __init__(self, proc_idd, connection_builder, env_variables):
 
         self.connection_builder = connection_builder
-        self.machine_name = machine_name
-        self.machine_idd = machine_idd
-        self.global_idd = global_idd
-        self.arch_name = arch_name
-        self.arch_idd = arch_idd
+        self.env_variables = env_variables
         self.proc_idd = proc_idd
         self.process = None
+        self.queue = None
 
 
     def start(self, queue_master):
         self.queue = Queue()
         self.process = Process(target=self.run, args=(self.queue, queue_master))
         self.process.start()
+
+
+    def debug(self, *args):
+        debug(self.proc_idd, "|", *args)
 
 
     def run(self, queue_in, queue_master):
@@ -245,6 +263,7 @@ class Proc:
             msg_in = queue_in.get()
 
             if msg_in.action == "execute":
+                #self.debug("Starting execute")
                 success = self.execute(msg_in, conn)
 
                 msg_out = Msg("finished", self.proc_idd)
@@ -271,31 +290,26 @@ class Proc:
         task = msg_in.task
 
         # Prepare the initrc
-        variables = {
-            "WUP_MACHINE_NAME": self.machine_name,
-            "WUP_MACHINE_IDD": self.machine_idd,
-            "WUP_GLOBAL_IDD": self.global_idd,
-            "WUP_ARCH_NAME": self.arch_name,
-            "WUP_ARCH_IDD": self.arch_idd,
-            "WUP_PROC_IDD": self.proc_idd,
-            "WUP_WORK_DIR": task.work_dir
-        }
+        variables = copy.copy(self.env_variables)
+        variables["WUP_WORK_DIR"] = task.work_dir
 
-        for name, value in task.combination.items():
-            variables[name] = value
+        for name, value in task.combination:
+            variables[name] = str(value)
 
-        initrc = [b"%s=\"%s\"" % (a.encode(), b.encode()) for a,b in variables]
-        initrc.insert(0, b"cd \"%s\"" % task.work_dir)
+        initrc = [b"%s=\"%s\"" % (a.encode(), b.encode()) for a, b in variables.items()]
+        initrc.insert(0, b"cd \"%s\"" % task.work_dir.encode())
 
         # Execute this task
+        #self.debug("Calling execute on connection")
         success, output, status = conn.execute(initrc, task.cmdline)
 
         # Create the task folder
-        os.makedirs(task.output_dir)
+        os.makedirs(task.output_dir, exist_ok=True)
 
         # Dump task info
+        #self.debug("Writing task info")
         task_info = {
-            "exit_code": status,
+            "exit_code": status.decode("utf-8"),
             "variables": variables
         }
 
@@ -304,16 +318,20 @@ class Proc:
             yaml.dump(task_info, fout, default_flow_style=False)
         
         # Dump task output
+        #self.debug("Writing task output")
         filepath = os.path.join(task.output_dir, "output.txt")
-        with open(filepath, "w") as fout:
+        with open(filepath, "wb") as fout:
             fout.writelines(output)
-        
+    
+        if not success:
+            warn("Task %d has failed" % task.task_idd)
+
         return success
 
 
 class ClusterBurn(Context):
 
-    def __init__(self, num_runs, output_dir, default_workdir, default_variables, experiments):
+    def __init__(self, cluster, num_runs, output_dir, default_workdir, default_variables, experiments):
 
         Context.__init__(self)
 
@@ -322,6 +340,7 @@ class ClusterBurn(Context):
         self.default_workdir = default_workdir
         self.experiments = experiments
         self.num_runs = num_runs
+        self.cluster = cluster
 
         os.makedirs(self.output_dir, exist_ok=True)
 
@@ -341,8 +360,8 @@ class ClusterBurn(Context):
 
         key = hashlib.md5()
 
-        key.update(str(self.num_runs))
-        key.update(str(self.tasks))
+        key.update(str(self.num_runs).encode())
+        key.update(str(self.tasks).encode())
 
         signature = key.digest()
         
@@ -351,11 +370,11 @@ class ClusterBurn(Context):
         if os.path.exists(signature_filepath):
             with open(signature_filepath) as fin:
                 data = fin.readline().strip()
-                if data != signature:
+                if data and data != signature:
                     error("This output directory belongs to another experiment combination, use an empty directory or clean it")
         else:
             with open(signature_filepath, "w") as fout:
-                fout.write(signature + "\n")
+                fout.write(signature + b"\n")
 
 
     def _start_tasks(self):
@@ -363,7 +382,7 @@ class ClusterBurn(Context):
         experiment_idd = -1
         perm_idd = -1
         run_idd = -1
-        cmd_idd = -1
+        task_idd = -1
         tasks = []
 
         for e in self.experiments:
@@ -378,23 +397,24 @@ class ClusterBurn(Context):
                 for _ in range(self.num_runs):
                     run_idd += 1
 
-                    for cmdline in e.commands:
-                        cmd_idd += 1
+                    for cmd in e.commands:
+                        task_idd += 1
 
-                        output_dir = os.path.join(self.output_dir, "tasks", str(cmd_idd))
+                        output_dir = os.path.join(self.output_dir, "tasks", str(task_idd))
                         os.makedirs(output_dir, exist_ok=True)
 
-                        task = Task(output_dir, work_dir, experiment_idd, perm_idd, run_idd, cmd_idd, combination, cmdline)
+                        task = Task(output_dir, work_dir, experiment_idd, perm_idd, run_idd, task_idd, combination, cmd.cmdline.encode())
                         tasks.append(task)
         
         return tasks
     
 
     def _start_cluster(self, cluster):
-        arch_idd = 0
-        machine_idd = 0
-        global_idd = 0
-        procs = []
+        arch_idd = -1
+        machine_idd = -1
+        proc_idd = -1
+
+        result = []
 
         for arch_name, machines in cluster.archs.items():
             arch_idd += 1
@@ -402,14 +422,24 @@ class ClusterBurn(Context):
             for machine_name, machine in machines.items():
                 machine_idd += 1
 
-                for proc_idd in range(machine.procs):
+                for _ in range(machine.procs):
+                    proc_idd += 1
+
                     builder = lambda: SSHTunnelConnector(machine)
 
-                    proc = Proc(builder, arch_name, machine_name, arch_idd, machine_idd, global_idd, proc_idd)
-                    procs.append(proc)
-                    global_idd += 1
+                    env_variables = {
+                        "WUP_MACHINE_NAME": machine_name,
+                        "WUP_ARCH_NAME": arch_name,
+
+                        "WUP_MACHINE_IDD": str(machine_idd),
+                        "WUP_ARCH_IDD": str(arch_idd),
+                        "WUP_PROC_IDD": str(proc_idd)
+                    }
+
+                    proc = Proc(proc_idd, builder, env_variables)
+                    result.append(proc)
         
-        return procs
+        return result
 
 
     def _burn(self):
@@ -424,21 +454,24 @@ class ClusterBurn(Context):
 
 
         # Start loop
-        print("Starting workers")
+        info("|MASTER| Starting workers", len(self.procs))
         for proc in self.procs:
             proc.start(self.queue)
 
 
         # Main loop
         try:
-            print("Waiting for workers to start delegating tasks")
+            info("|MASTER| Executing main loop")
             
             while self.todo or self.doing:
                 msg_in = self.queue.get()
 
-                print()
-                print("|MASTER| Status %d/%d/%d" % (len(self.todo), len(self.doing), len(self.done)))
-                print("|MASTER| Message %s from %d" % (msg_in.action, msg_in.source))
+                msg = "|MASTER| Running %d/%d/%d" % (len(self.todo), len(self.doing), len(self.done))
+                sys.stdout.write("\r" + colors.green(msg))
+                sys.stdout.flush()
+
+                #info("|MASTER| Status %d/%d/%d" % (len(self.todo), len(self.doing), len(self.done)))
+                #info("|MASTER| Message %s from %d" % (msg_in.action, msg_in.source))
 
                 if msg_in.action == "ready":
                     self._ready(msg_in)
@@ -449,15 +482,17 @@ class ClusterBurn(Context):
                 else:
                     warn("Unknown action:", msg_in.action)
             
-            print("Completed")
+            print()
+            info("Completed")
         except KeyboardInterrupt:
             print("Operation interrupted")
             return
 
+        print()
 
         # Ending loop
         try:
-            print("Terminating child processes...")
+            info("|MASTER| Terminating child processes...")
             # Sending TERM signal
             for proc in self.procs:
                 msg = Msg("terminate")
@@ -465,15 +500,15 @@ class ClusterBurn(Context):
             
             # Waiting for ENDED signal
             while len(self.procs) != len(self.ended):
-                print("Ended %d/%d" % (len(self.procs), len(self.ended)))
+                info("|MASTER| Ended %d/%d" % (len(self.procs), len(self.ended)))
                 msg = self.queue.get()
 
                 if msg.action == "ended":
-                    info("Worker %d has ended" % msg.source)
+                    #debug("Worker %d has ended" % msg.source)
                     self.ended.append(msg.source)
                 
                 else:
-                    info("Ignoring action, terminating execution:", msg.action)
+                    debug("Ignoring action %s from %s, execution is ending" % (msg.source, msg.action))
 
             print("Completed")
         except KeyboardInterrupt:
@@ -512,7 +547,7 @@ class ClusterBurn(Context):
             return
 
         if task.tries >= 3:
-            warn("Giving up on task %d too many fails" % task.cmd_idd)
+            warn("Giving up on task %d too many fails" % task.task_idd)
             return
         
         if not self.idle:

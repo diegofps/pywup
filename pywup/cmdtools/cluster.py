@@ -91,14 +91,23 @@ def burn(cmd, args):
     default_workdir = None
     output_dir = "./burn"
     experiments = []
+    cluster = False
     num_runs = 1
+
+    def require_experiment():
+        if current_experiment is None:
+            error("You must start an experiment first: --e <EXPERIMENT_NAME>")
 
     while args.has_next():
         cmd = args.pop_cmd()
 
         if cmd == "--e":
-            current_experiment = Experiment()
+            name = args.pop_parameter()
+            current_experiment = Experiment(name)
             experiments.append(current_experiment)
+        
+        elif cmd == "--cluster":
+            cluster = True
         
         elif cmd == "--w":
             if current_experiment is None:
@@ -113,11 +122,16 @@ def burn(cmd, args):
             num_runs = int(args.pop_parameter())
         
         elif cmd == "--c":
-            if current_experiment is None:
-                error("You must start an experiment first: --e <EXPERIMENT_NAME>")
-            else:
-                current_experiment.add_command(args.pop_parameter())
+            require_experiment()
+            cmd = args.pop_parameter()
+            current_experiment.add_command(cmd)
         
+        elif cmd == "--vc":
+            require_experiment()
+            env = args.pop_parameter()
+            cmd = args.pop_parameter()
+            current_experiment.add_virtual_command(env, cmd)
+
         elif cmd.startswith("--v"):
             if cmd == "--v":
                 v = ListVariable(args)
@@ -142,7 +156,7 @@ def burn(cmd, args):
         else:
             error("Unknown parameter:", cmd)
     
-    ClusterBurn(num_runs, output_dir, default_workdir, default_variables, experiments).start()
+    ClusterBurn(cluster, num_runs, output_dir, default_workdir, default_variables, experiments).start()
 
 
 def main(cmd, args):

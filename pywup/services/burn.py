@@ -2,12 +2,22 @@ from pywup.services.system import error
 
 import copy
 
+
+class Command:
+
+    def __init__(self, cmdline, env=None):
+        self.cmdline = cmdline
+        self.env_name = env
+
+
 class Experiment:
 
-    def __init__(self):
+    def __init__(self, name):
+
         self.work_dir = None
         self.variables = {}
         self.commands = []
+        self.name = name
     
 
     def add_variable(self, v):
@@ -18,14 +28,18 @@ class Experiment:
 
 
     def add_command(self, c):
-        self.commands.append(c)
+        self.commands.append(Command(c))
+
+
+    def add_virtual_command(self, e, c):
+        self.commands.append(Command(c, e))
 
 
     def get_variables(self, default_variables):
         variables = copy.copy(default_variables)
-
-        for v in self.variables:
-            variables[v.get_name()] = v
+        
+        for name, v in self.variables.items():
+            variables[name] = v
         
         return variables
 

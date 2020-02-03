@@ -39,22 +39,22 @@ def print_table(columns):
 
 
 def yprint(*args):
-    print(colors.YELLOW + " ".join(args) + colors.RESET)
+    print(colors.YELLOW + " ".join([str(v) for v in args]) + colors.RESET)
 
 
 def wprint(*args):
-    print(colors.WHITE + " ".join(args) + colors.RESET)
+    print(colors.WHITE + " ".join([str(v) for v in args]) + colors.RESET)
 
 
 def gprint(*args):
-    print(colors.GREEN + " ".join(args) + colors.RESET)
+    print(colors.GREEN + " ".join([str(v) for v in args]) + colors.RESET)
 
 
 def rprint(*args):
-    print(colors.RED + " ".join(args) + colors.RESET)
+    print(colors.RED + " ".join([str(v) for v in args]) + colors.RESET)
 
 def cprint(*args):
-    print(colors.CYAN + " ".join(args) + colors.RESET)
+    print(colors.CYAN + " ".join([str(v) for v in args]) + colors.RESET)
 
 
 def quote(str):
@@ -96,7 +96,7 @@ def run(cmds, write=None, read=False, suppressInterruption=False, suppressError=
             status = back.wait()
 
             if not suppressError and status != 0:
-                error("Failed to execute command:\n", " | ".join(cmds))
+                error("Failed to execute command:\n" + " | ".join(cmds))
             
             return status,lines
 
@@ -126,7 +126,7 @@ def run(cmds, write=None, read=False, suppressInterruption=False, suppressError=
             status = ps[-1].wait()
 
             if not suppressError and status != 0:
-                error("Failed to execute command:\n", " | ".join(cmds))
+                error("Failed to execute command:\n" + " | ".join(cmds))
             
             return status, None
 
@@ -145,7 +145,7 @@ def run(cmds, write=None, read=False, suppressInterruption=False, suppressError=
             status = back.wait()
 
             if not suppressError and status != 0:
-                error("Failed to execute command:\n", " | ".join(cmds))
+                error("Failed to execute command:\n" + " | ".join(cmds))
             
             return status, lines
 
@@ -153,7 +153,7 @@ def run(cmds, write=None, read=False, suppressInterruption=False, suppressError=
             status = os.system(cmds[0])
 
             if not suppressError and status != 0:
-                error("Failed to execute command:\n", " | ".join(cmds))
+                error("Failed to execute command:\n" + " | ".join(cmds))
             
             return status, None
         
@@ -175,7 +175,7 @@ def run(cmds, write=None, read=False, suppressInterruption=False, suppressError=
             status = ps[-1].wait()
             
             if not suppressError and status != 0:
-                error("Failed to execute command:\n", " | ".join(cmds))
+                error("Failed to execute command:\n" + " | ".join(cmds))
             
             return status, None
 
@@ -202,10 +202,15 @@ def warn(*args):
 
 
 def info(*args):
-    cprint("|INFO|", *args)
+    gprint("|INFO|", *args)
 
 
-def readlines(self, master, lines, verbose=False):
+def debug(*args):
+    cprint("|DEBUG|", *args)
+
+
+
+def readlines(master, lines, verbose=False):
     
     o = os.read(master, 10240)
 

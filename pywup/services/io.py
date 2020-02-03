@@ -5,6 +5,49 @@ import yaml
 import os
 
 
+def lookup_cluster(name):
+
+    candidate = expand_path(name)
+
+    if not os.path.exists(candidate):
+        candidate = expand_path("./" + name + ".cluster")
+        if not os.path.exists(candidate):
+            error("Could not find a cluster definition for:", name)
+    else:
+        name = os.path.splitext(os.path.basename(name))[0]
+    
+    if "__" in name:
+        error("Cluster names must not contain two consecutive underscores (__)")
+
+    if name == "temp":
+        error("You cannot use a cluster named temp")
+    
+    cluster = ClusterFile(candidate)
+
+    return name, candidate, cluster
+
+
+def lookup_env(name):
+    candidate = expand_path(name)
+
+    if not os.path.exists(candidate):
+        candidate = expand_path("./" + name + ".env")
+        if not os.path.exists(candidate):
+            candidate = expand_path("~/.wup/envs/" + name + "/" + name + ".env")
+            if not os.path.exists(candidate):
+                error("Could not find an env declaration for:", name)
+    else:
+        name = os.path.splitext(os.path.basename(name))[0]
+    
+    if "__" in name:
+        error("Names must not contain two consecutive underscores (__)")
+
+    if name == "temp":
+        error("You cannot use an env named temp")
+    
+    return name, candidate
+
+
 class Preferences:
 
     FILEPATH = expand_path("~/.wup/preferences.yaml")
@@ -44,71 +87,6 @@ class Preferences:
             yaml.dump(self.data, fout, default_flow_style=False)
         
         self.update_state()
-
-
-    def lookup_cluster(self, name):
-        if name == "-":
-            self.cluster_name = None
-            self.cluster_filepath = None
-            self.cluster_env_name = None
-            self.cluster_env_filepath = None
-            return
-        
-        candidate = expand_path(name)
-
-        if not os.path.exists(candidate):
-            candidate = expand_path("./" + name + ".cluster")
-            if not os.path.exists(candidate):
-                error("Could not find a cluster definition for:", name)
-        else:
-            name = os.path.splitext(os.path.basename(name))[0]
-        
-        if "__" in name:
-            error("Cluster names must not contain two consecutive underscores (__)")
-
-        if name == "temp":
-            error("You cannot use a cluster named temp")
-        
-        cluster = ClusterFile(candidate)
-
-        if cluster.docker_based:
-            self.cluster_name = name
-            self.cluster_filepath = candidate
-            self.cluster_env_name = cluster.env_name
-            self.cluster_env_filepath = cluster.env_filepath
-
-        else:
-            self.cluster_name = name
-            self.cluster_filepath = candidate
-            self.cluster_env_name = None
-            self.cluster_env_filepath = None
-
-
-    def lookup_env(self, name):
-        if name == "-":
-            self.env_name = None
-            self.env_filepath = None
-            return
-
-        candidate = expand_path(name)
-
-        if not os.path.exists(candidate):
-            candidate = expand_path("./" + name + ".env")
-            if not os.path.exists(candidate):
-                candidate = expand_path("~/.wup/envs/" + name + "/" + name + ".env")
-                if not os.path.exists(candidate):
-                    error("Could not find an env declaration for:", name)
-        else:
-            name = os.path.splitext(os.path.basename(name))[0]
-        
-        if "__" in name:
-            error("Names must not contain two consecutive underscores (__)")
-
-        if name == "temp":
-            error("You cannot use an env named temp")
-        
-        self.env_name = name
-        self.env_filepath = candidate
 
         
     def update_state(self):

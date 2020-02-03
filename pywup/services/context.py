@@ -1,7 +1,7 @@
 from pywup.services.system import error, run, abort, WupError, expand_path, colors, filename
-from pywup.services.preferences import Preferences
 from pywup.services.clusterfile import ClusterFile
 from pywup.services.envfile import EnvFile
+from pywup.services.io import Preferences
 
 import re
 import os
