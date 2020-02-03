@@ -1,4 +1,4 @@
-from pywup.services.system import expand_path, error, warn, info, debug, readlines, colors
+from pywup.services.system import expand_path, error, warn, info, debug, critical, readlines, colors
 from pywup.services.state_machine import StateMachine
 from pywup.services.context import Context
 from multiprocessing import Process, Queue
@@ -172,7 +172,7 @@ class SSHTunnelConnector:
                     break
 
             debug("Sleeping before next try...")
-            time.sleep(5)
+            time.sleep(2)
             conn_try += 1
 
 
@@ -220,15 +220,10 @@ class SSHTunnelConnector:
                     output_end = i
             
             if output_end is not None:
-                status = lines[output_end].split()[0] if output_end < len(lines) else b"255"
+                status = lines[output_end].split()[0].decode("utf-8") if output_end < len(lines) else "255"
                 break
 
-        if status == b"0":
-            #debug("Status is equal to 0")
-            return True, lines[output_start:output_end], status
-        else:
-            #debug("Status '%s' is not equal to 0 " % status)
-            return False, lines[output_start:output_end], status
+        return (status == "0"), lines[output_start:output_end], status
 
 
 class Proc:
@@ -307,9 +302,8 @@ class Proc:
         os.makedirs(task.output_dir, exist_ok=True)
 
         # Dump task info
-        #self.debug("Writing task info")
         task_info = {
-            "exit_code": status.decode("utf-8"),
+            "exit_code": status,
             "variables": variables
         }
 
@@ -324,7 +318,10 @@ class Proc:
             fout.writelines(output)
     
         if not success:
-            warn("Task %d has failed" % task.task_idd)
+            critical("Task %d has failed. Exit code: %s" % (task.task_idd, status))
+            for line in output:
+                os.write(sys.stdout.fileno(), line)
+            critical("--- END OF FAILED OUTPUT ---")
 
         return success
 
@@ -364,17 +361,19 @@ class ClusterBurn(Context):
         key.update(str(self.tasks).encode())
 
         signature = key.digest()
+        other_signature = b""
         
         signature_filepath = os.path.join(self.output_dir, "experiment.sig")
 
         if os.path.exists(signature_filepath):
-            with open(signature_filepath) as fin:
-                data = fin.readline().strip()
-                if data and data != signature:
-                    error("This output directory belongs to another experiment combination, use an empty directory or clean it")
-        else:
-            with open(signature_filepath, "w") as fout:
-                fout.write(signature + b"\n")
+            with open(signature_filepath, "rb") as fin:
+                other_signature = fin.read()
+        #import pdb; pdb.set_trace()
+        if False and other_signature and other_signature != signature:
+            error("This output directory belongs to another experiment combination, use an empty directory or clean it")
+            
+        with open(signature_filepath, "wb") as fout:
+            fout.write(signature)
 
 
     def _start_tasks(self):
@@ -467,8 +466,7 @@ class ClusterBurn(Context):
                 msg_in = self.queue.get()
 
                 msg = "|MASTER| Running %d/%d/%d" % (len(self.todo), len(self.doing), len(self.done))
-                sys.stdout.write("\r" + colors.green(msg))
-                sys.stdout.flush()
+                info(colors.green(msg))
 
                 #info("|MASTER| Status %d/%d/%d" % (len(self.todo), len(self.doing), len(self.done)))
                 #info("|MASTER| Message %s from %d" % (msg_in.action, msg_in.source))
@@ -500,17 +498,17 @@ class ClusterBurn(Context):
             
             # Waiting for ENDED signal
             while len(self.procs) != len(self.ended):
-                info("|MASTER| Ended %d/%d" % (len(self.procs), len(self.ended)))
                 msg = self.queue.get()
 
                 if msg.action == "ended":
-                    #debug("Worker %d has ended" % msg.source)
                     self.ended.append(msg.source)
+                    info("|MASTER| Ended %d/%d" % (len(self.ended), len(self.procs)))
                 
                 else:
                     debug("Ignoring action %s from %s, execution is ending" % (msg.source, msg.action))
 
-            print("Completed")
+            print()
+            info("Terminated")
         except KeyboardInterrupt:
             print("Operation interrupted")
             return

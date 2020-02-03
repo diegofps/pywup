@@ -1,0 +1,27 @@
+archs:
+  amd64:
+    wespa3:
+      build: true
+      deploy: true
+      hostname: 192.168.1.105
+      params: {}
+      port: 22
+      procs: 16
+      tags:
+      - wespa
+      user: dsouza
+    tower:
+      build: true
+      deploy: true
+      hostname: 192.168.1.109
+      params: {}
+      port: 22
+      procs: 1
+      tags:
+      - wespa
+      user: diego
+docker_based: false
+env_filepath: 
+env_name: 
+filepath: /home/diego/Sources/pywup/two.cluster
+name: two

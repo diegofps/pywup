@@ -197,6 +197,10 @@ def error(*args):
         raise WupError()
 
 
+def critical(*args):
+    rprint("|CRITICAL|", *args)
+
+
 def warn(*args):
     yprint("|WARNING|", *args)
 
