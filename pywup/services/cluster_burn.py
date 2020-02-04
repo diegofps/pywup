@@ -88,6 +88,12 @@ class Task:
         self.assigned_to = None
         self.cmdline = cmdline
         self.run_idd = run_idd
+        self.started_ad = None
+        self.ended_ad = None
+        self.duration = None
+        self.success = None
+        self.output = None
+        self.status = None
         self.tries = 0
     
     
@@ -313,14 +319,20 @@ class Proc:
 
         # Execute this task
         #self.debug("Calling execute on connection")
-        success, output, status = conn.execute(initrc, task.cmdline)
+        task.started_at = datetime.now()
+        task.success, task.output, task.status = conn.execute(initrc, task.cmdline)
+        task.ended_at = datetime.now()
+        task.duration = (task.ended_at - task.started_at).total_seconds()
 
         # Create the task folder
         os.makedirs(task.output_dir, exist_ok=True)
 
         # Dump task info
         task_info = {
-            "exit_code": status,
+            "exit_code": task.status,
+            "started_at": task.started_at,
+            "ended_at": task.ended_at,
+            "duration": task.duration,
             "variables": variables
         }
 
@@ -332,15 +344,15 @@ class Proc:
         #self.debug("Writing task output")
         filepath = os.path.join(task.output_dir, "output.txt")
         with open(filepath, "wb") as fout:
-            fout.writelines(output)
+            fout.writelines(task.output)
     
-        if not success:
-            critical("Task %d has failed. Exit code: %s" % (task.task_idd, status))
-            for line in output:
+        if not task.success:
+            critical("Task %d has failed. Exit code: %s" % (task.task_idd, task.status))
+            for line in task.output:
                 os.write(sys.stdout.fileno(), line)
             critical("--- END OF FAILED OUTPUT ---")
 
-        return success
+        return task.success
 
 
 class ClusterBurn(Context):

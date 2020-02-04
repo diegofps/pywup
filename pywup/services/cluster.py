@@ -227,7 +227,7 @@ class Cluster(Context):
             else:
                 # Look for docker
                 found_docker = False
-                for candidate in ["/usr/local/bin/docker", "/usr/bin/docker"]:
+                for candidate in ["/usr/local/bin/docker", "/usr/bin/docker", "/bin/docker", "/snap/bin/docker"]:
 
                     status, _ = ssh.run("%s --version" % candidate, read=True, suppressError=True)
                     if status == 0:

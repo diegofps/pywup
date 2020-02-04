@@ -74,7 +74,21 @@ class PBash:
         while True:
             try:
                 sys.stdout.write(colors.WHITE)
-                cmd = input(">> ").strip()
+
+                rows = []
+                first = True
+
+                while True:
+                    cmd = input(">> " if first else "").strip()
+                    first = False
+
+                    if cmd.endswith("\\"):
+                        rows.append(cmd[:-1])
+                    else:
+                        rows.append(cmd)
+                        cmd = "".join(rows)
+                        break
+
                 sys.stdout.write(colors.RESET)
                 sys.stdout.flush()
 
