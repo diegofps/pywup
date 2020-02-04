@@ -307,6 +307,10 @@ class colors:
     BG_WHITE  = "\033[46m"
 
     @staticmethod
+    def gray(str):
+        return colors.GRAY + str + colors.RESET
+    
+    @staticmethod
     def red(str):
         return colors.RED + str + colors.RESET
     

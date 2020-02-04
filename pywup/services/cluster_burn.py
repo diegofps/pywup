@@ -4,6 +4,7 @@ from pywup.services.context import Context
 from pywup.services.ssh import BasicSSH
 
 from multiprocessing import Process, Queue
+from datetime import datetime
 from subprocess import Popen
 
 import hashlib
@@ -105,6 +106,15 @@ class SSHConnector:
 
 class BashConnector:
     pass
+
+class ConnectorBuilder:
+
+    def __init__(self, connector, machine):
+        self.connector = connector
+        self.machine = machine
+
+    def __call__(self):
+        return self.connector(self.machine)
 
 
 class SSHTunnelConnector:
@@ -253,37 +263,39 @@ class Proc:
 
 
     def run(self, queue_in, queue_master):
-        
-        conn = self.connection_builder()
+        try:
+            conn = self.connection_builder()
 
-        msg_out = Msg("ready", self.proc_idd)
-        queue_master.put(msg_out)
-        
-        while True:
-            msg_in = queue_in.get()
-
-            if msg_in.action == "execute":
-                #self.debug("Starting execute")
-                success = self.execute(msg_in, conn)
-
-                msg_out = Msg("finished", self.proc_idd)
-                msg_out.success = success
-                queue_master.put(msg_out)
-
-                if not conn.is_alive:
-                    conn = self.connection_builder()
-
-                msg_out = Msg("ready", self.proc_idd)
-                queue_master.put(msg_out)
+            msg_out = Msg("ready", self.proc_idd)
+            queue_master.put(msg_out)
             
-            elif msg_in.action == "terminate":
-                break
+            while True:
+                msg_in = queue_in.get()
+
+                if msg_in.action == "execute":
+                    #self.debug("Starting execute")
+                    success = self.execute(msg_in, conn)
+
+                    msg_out = Msg("finished", self.proc_idd)
+                    msg_out.success = success
+                    queue_master.put(msg_out)
+
+                    if not conn.is_alive:
+                        conn = self.connection_builder()
+
+                    msg_out = Msg("ready", self.proc_idd)
+                    queue_master.put(msg_out)
+                
+                elif msg_in.action == "terminate":
+                    break
+                
+                else:
+                    warn("Unknown action:", msg_in.action)
             
-            else:
-                warn("Unknown action:", msg_in.action)
-        
-        msg_out = Msg("ended", self.proc_idd)
-        queue_master.put(msg_out)
+            msg_out = Msg("ended", self.proc_idd)
+            queue_master.put(msg_out)
+        except KeyboardInterrupt:
+            pass
 
 
     def execute(self, msg_in, conn):
@@ -429,7 +441,7 @@ class ClusterBurn(Context):
                 for _ in range(machine.procs):
                     proc_idd += 1
 
-                    builder = lambda: SSHTunnelConnector(machine)
+                    builder = ConnectorBuilder(SSHTunnelConnector, machine)
 
                     env_variables = {
                         "WUP_MACHINE_NAME": machine_name,
@@ -452,6 +464,7 @@ class ClusterBurn(Context):
         self.todo = copy.copy(self.tasks)
         self.doing = []
         self.done = []
+        self.given_up = []
 
         self.idle = []
         self.ended = []
@@ -461,27 +474,29 @@ class ClusterBurn(Context):
         
 
         # Start loop
-        info("|MASTER| Starting workers", len(self.procs))
+        info("Starting %d worker(s)" % len(self.procs))
         for proc in self.procs:
             proc.start(self.queue)
 
-
         # Main loop
         try:
-            info("|MASTER| Executing main loop")
+            info("Starting main loop")
             while self.todo or self.doing:
                 msg_in = self.queue.get()
 
                 l1 = str(len(self.todo))
                 l2 = str(len(self.doing))
                 l3 = str(len(self.done))
+                l4 = str(len(self.given_up))
 
-                l1 = " " * (len_todo - len(l1)) + l1
-                l2 = " " * (len_proc - len(l2)) + l2
-                l3 = " " * (len_todo - len(l3)) + l3
+                d  = colors.gray("|%s|" % str(datetime.now()))
+                l1 = colors.white(" " * (len_todo - len(l1)) + l1 + " |")
+                l2 = colors.white(" " * (len_proc - len(l2)) + l2 + " |")
+                l3 = colors.green(" " * (len_todo - len(l3)) + l3 + " |")
+                l4 = colors.red(" " * (len_todo - len(l4)) + l4 + " |")
 
-                msg = "|MASTER| Running %s / %s / %s" % (l1, l2, l3)
-                info(colors.green(msg))
+                msg = "%s %s %s %s %s" % (d, l1, l2, l3, l4)
+                print(msg)
 
                 #info("|MASTER| Status %d/%d/%d" % (len(self.todo), len(self.doing), len(self.done)))
                 #info("|MASTER| Message %s from %d" % (msg_in.action, msg_in.source))
@@ -495,7 +510,6 @@ class ClusterBurn(Context):
                 else:
                     warn("Unknown action:", msg_in.action)
             
-            print()
             info("Completed")
         except KeyboardInterrupt:
             print("Operation interrupted")
@@ -505,7 +519,7 @@ class ClusterBurn(Context):
 
         # Ending loop
         try:
-            info("|MASTER| Terminating child processes...")
+            info("Terminating child processes...")
             # Sending TERM signal
             for proc in self.procs:
                 msg = Msg("terminate")
@@ -517,13 +531,21 @@ class ClusterBurn(Context):
 
                 if msg.action == "ended":
                     self.ended.append(msg.source)
-                    info("|MASTER| Ended %d/%d" % (len(self.ended), len(self.procs)))
+
+                    d = colors.gray("|%s|" % str(datetime.now()))
+
+                    l1 = str(len(self.ended))
+                    l2 = str(len(self.procs))
+
+                    l1 = " " * (len_proc - len(l1)) + l1
+                    l2 = " " * (len_proc - len(l2)) + l2
+
+                    print("%s %sEnded %s / %s%s" % (d, colors.WHITE, l1, l2, colors.RESET))
                 
                 else:
                     #debug("Ignoring action %s from %s, execution is ending" % (msg.source, msg.action))
                     pass
 
-            print()
             info("Terminated")
         except KeyboardInterrupt:
             print("Operation interrupted")
@@ -562,6 +584,7 @@ class ClusterBurn(Context):
 
         if task.tries >= 3:
             warn("Giving up on task %d too many fails" % task.task_idd)
+            self.given_up.append(task)
             return
         
         if not self.idle:

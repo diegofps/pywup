@@ -1,0 +1,111 @@
+cp -r /home/ngd/Tracker/dory2/app /home/ngd/Tracker/dory2/fullapp
+parallel-ssh -h newports -t 0 -i 'rm /home/ngd/Tracker/dory2/fullapp/data/otg100'
+ln -s ~/Tracker/ACM-Journal/datasets/otb100 /home/ngd/Tracker/dory2/fullapp/data/otg100
+
+DATASETS="`(cd /home/ngd/Tracker/ACM-Journal/datasets/otb100-equal/wup/goturn/Valkyrie-AIC2U/ && ls -d */ | sed -r 's:/::' | tr '\n' ' ')`"
+
+wup cluster burn --cluster \
+    --w '$HOME' \
+    --o "./teste_output" \
+    --runs 2 \
+    --v P1 1 2 3 \
+\
+    --e TESTE \
+    --va P2 1 10 1 \
+    --vg P3 1 10 1.5 \
+    --c './test.py $P1 $P2 $P3'
+
+
+wup cluster burn --cluster \
+    --w '$HOME/Tracker/dory2/fullapp' \
+    --o "./test" \
+    --runs 1 \
+    --v DS_NAME $DATASETS \
+\
+    --e WISARD \
+    --c "make r6 ds=\$DS_NAME fps=30 extra='-gridSize 15 -cdMaxTrains 30 -cdThreshold 0.8 -cdNumDiscs 10 -model z -ztRamBits 5 -ztReplicate 2 -ztMinConfidence 0'"
+
+archs:
+  aarch64:
+    node1:
+      build: true
+      deploy: true
+      hostname: node1
+      port: 22
+      procs: 4
+      user: ngd
+    node2:
+      build: true
+      deploy: true
+      hostname: node2
+      port: 22
+      procs: 4
+      user: ngd
+    node3:
+      build: true
+      deploy: true
+      hostname: node3
+      port: 22
+      procs: 4
+      user: ngd
+    node4:
+      build: true
+      deploy: true
+      hostname: node4
+      port: 22
+      procs: 4
+      user: ngd
+    node5:
+      build: true
+      deploy: true
+      hostname: node5
+      port: 22
+      procs: 4
+      user: ngd
+    node6:
+      build: true
+      deploy: true
+      hostname: node6
+      port: 22
+      procs: 4
+      user: ngd
+    node7:
+      build: true
+      deploy: true
+      hostname: node7
+      port: 22
+      procs: 4
+      user: ngd
+    node8:
+      build: true
+      deploy: true
+      hostname: node8
+      port: 22
+      procs: 4
+      user: ngd
+    node9:
+      build: true
+      deploy: true
+      hostname: node9
+      port: 22
+      procs: 4
+      user: ngd
+    node10:
+      build: true
+      deploy: true
+      hostname: node10
+      port: 22
+      procs: 4
+      user: ngd
+    node11:
+      build: true
+      deploy: true
+      hostname: node11
+      port: 22
+      procs: 4
+      user: ngd
+docker_based: false
+env_filepath: null
+env_name: null
+filepath: /home/ngd/Tracker/ACM-Journal/newports.cluster
+name: newports
