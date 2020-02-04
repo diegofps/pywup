@@ -113,6 +113,7 @@ class SSHTunnelConnector:
 
         self.ssh = BasicSSH(machine.user, machine.ip, machine.ip)
         self.machine = machine
+        self.is_alive = False
 
         # Opens a pseudo-terminal
         self.master, self.slave = pty.openpty()
@@ -167,6 +168,7 @@ class SSHTunnelConnector:
                 
                 if found_ssh_on:
                     debug("SSH connection established")
+                    self.is_alive = True
                     return
                 
                 if found_ssh_off:
@@ -211,6 +213,7 @@ class SSHTunnelConnector:
                 if KEY_SSH_OFF in line:
                     warn("Found KEY_SSH_OFF")
                     self.popen.kill()
+                    self.is_alive = False
                     return False, None, None
                 
                 elif KEY_CMD_ON in line:
@@ -267,7 +270,7 @@ class Proc:
                 msg_out.success = success
                 queue_master.put(msg_out)
 
-                if not success:
+                if not conn.is_alive:
                     conn = self.connection_builder()
 
                 msg_out = Msg("ready", self.proc_idd)
