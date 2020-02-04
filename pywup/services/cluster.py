@@ -2,6 +2,7 @@ from pywup.services.system import run, error, quote, colors, expand_path, rprint
 from pywup.services.clusterfile import ClusterFile
 from pywup.services.pbash import PBash, Term
 from pywup.services.context import Context
+from pywup.services.ssh import BasicSSH
 
 from collections import defaultdict
 
@@ -210,56 +211,50 @@ class Cluster(Context):
         ssh_copy_failed = []
         docker_ps_did_not_work = []
 
-        known_hosts = expand_path("~/.ssh/known_hosts")
-        id_wup_pub = expand_path("~/.ssh/id_wup.pub")
-        id_wup = expand_path("~/.ssh/id_wup")
         cluster = self.clusterfile()
 
-        if not os.path.exists(id_wup) or not os.path.exists(id_wup_pub):
-            run("ssh-keygen -t rsa -f \"%s\" -N \"\"" % id_wup, suppressError=True, read=True)
-            run("chmod 700 %s %s" % (id_wup, id_wup_pub), read=True, suppressError=True)
-
         for m in cluster.all_machines():
-            credential = m.credential
-            ip = m.ip
-
-            print(known_hosts, ip, credential)
-
-            run("ssh-keygen -f \"%s\" -R \"%s\"" % (known_hosts,ip), suppressError=True, read=True)
-            run("ssh-keyscan \"%s\" >> \"%s\"" % (ip, known_hosts), suppressError=True)
-
-            status, rows = run("ssh-copy-id -i %s %s" % (id_wup_pub, credential), suppressError=True, read=True)
-            if status != 0:
+            ssh = BasicSSH(m.user, m.ip, m.port)
+            
+            if not ssh.install_key():
                 ssh_copy_failed.append(m)
             
-            status, rows = run("ssh %s \"ls\"" % credential, read=True, suppressError=True)
+            status, rows = ssh.run("ls", read=True, suppressError=True)
+
             if status != 0:
                 sanity_check.append(m)
 
             else:
+                # Look for docker
                 found_docker = False
                 for candidate in ["/usr/local/bin/docker", "/usr/bin/docker"]:
-                    status, rows = run("ssh %s \"%s --version\"" % (credential, candidate), read=True, suppressError=True)
+
+                    status, _ = ssh.run("%s --version" % candidate, read=True, suppressError=True)
                     if status == 0:
                         found_docker = True
                         break
+
                 if not found_docker:
                     missing_docker.append(m)
                 
-                status, _ = run("ssh %s \"rsync --version\"" % credential, read=True, suppressError=True)
+                # Look for rsync
+                status, _ = ssh.run("rsync --version", read=True, suppressError=True)
                 if status != 0:
                     missing_rsync.append(m)
                 
-                status, _ = run("ssh %s \"wup\"" % credential, read=True, suppressError=True)
+                # Look for wup
+                status, _ = ssh.run("wup", read=True, suppressError=True)
                 if status != 0:
                     missing_pywup.append(m)
                 
-                status, rows = run("ssh %s \"groups\"" % credential, read=True, suppressError=True)
+                # Look for docker group
+                status, rows = ssh.run("groups", read=True, suppressError=True)
                 if status != 0 or not rows or not "docker" in rows[0]:
                     missing_docker_group.append(m)
                 
                 else:
-                    status, rows = run("ssh %s \"docker ps\"" % credential, suppressError=True)
+                    # Look for a working docker command
+                    status, _ = ssh.run("docker ps", suppressError=True)
                     if status != 0:
                         docker_ps_did_not_work.append(m)
         

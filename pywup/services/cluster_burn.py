@@ -1,9 +1,10 @@
 from pywup.services.system import expand_path, error, warn, info, debug, critical, readlines, colors
 from pywup.services.state_machine import StateMachine
 from pywup.services.context import Context
+from pywup.services.ssh import BasicSSH
+
 from multiprocessing import Process, Queue
 from subprocess import Popen
-
 
 import hashlib
 import select
@@ -110,6 +111,7 @@ class SSHTunnelConnector:
 
     def __init__(self, machine):
 
+        self.ssh = BasicSSH(machine.user, machine.ip, machine.ip)
         self.machine = machine
 
         # Opens a pseudo-terminal
@@ -451,6 +453,9 @@ class ClusterBurn(Context):
         self.idle = []
         self.ended = []
 
+        len_todo = len(str(len(self.todo)))
+        len_proc = len(str(len(self.procs)))
+        
 
         # Start loop
         info("|MASTER| Starting workers", len(self.procs))
@@ -461,11 +466,18 @@ class ClusterBurn(Context):
         # Main loop
         try:
             info("|MASTER| Executing main loop")
-            
             while self.todo or self.doing:
                 msg_in = self.queue.get()
 
-                msg = "|MASTER| Running %d/%d/%d" % (len(self.todo), len(self.doing), len(self.done))
+                l1 = str(len(self.todo))
+                l2 = str(len(self.doing))
+                l3 = str(len(self.done))
+
+                l1 = " " * (len_todo - len(l1)) + l1
+                l2 = " " * (len_proc - len(l2)) + l2
+                l3 = " " * (len_todo - len(l3)) + l3
+
+                msg = "|MASTER| Running %s / %s / %s" % (l1, l2, l3)
                 info(colors.green(msg))
 
                 #info("|MASTER| Status %d/%d/%d" % (len(self.todo), len(self.doing), len(self.done)))
