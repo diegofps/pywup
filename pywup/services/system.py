@@ -267,18 +267,45 @@ class WupError(Exception):
 
 class colors:
     RESET="\033[0m"
-    RED="\033[1;31m"
-    GREEN="\033[1;32m"
-    YELLOW="\033[1;33m"
-    BLUE="\033[1;34m"
-    PURPLE="\033[1;35m"
-    CYAN="\033[1;36m"
-    WHITE="\033[1;37m"
 
-    @staticmethod
-    def yellow(str):
-        return colors.YELLOW + str + colors.RESET
-    
+    RESET     = "\033[0m"
+
+    BRIGHTER  = "\033[1m"
+    DARKER    = "\033[2m"
+    ITALIC    = "\033[3m"
+    UNDERLINE = "\033[4m"
+    BLINKING  = "\033[5m"
+    REVERSE   = "\033[7m"
+    INVISIBLE = "\033[8m"
+    CROSSING  = "\033[9m"
+
+    GRAY    = "\033[90m"
+    RED     = "\033[91m"
+    GREEN   = "\033[92m"
+    YELLOW  = "\033[93m"
+    BLUE    = "\033[94m"
+    PURPLE  = "\033[95m"
+    CYAN    = "\033[96m"
+    WHITE   = "\033[97m"
+
+    BOLD_GRAY   = "\033[1;30m"
+    BOLD_RED    = "\033[1;31m"
+    BOLD_GREEN  = "\033[1;32m"
+    BOLD_YELLOW = "\033[1;33m"
+    BOLD_BLUE   = "\033[1;34m"
+    BOLD_PURPLE = "\033[1;35m"
+    BOLD_CYAN   = "\033[1;36m"
+    BOLD_WHITE  = "\033[1;37m"
+
+    BG_GRAY   = "\033[40m"
+    BG_RED    = "\033[41m"
+    BG_GREEN  = "\033[42m"
+    BG_YELLOW = "\033[43m"
+    BG_BLUE   = "\033[44m"
+    BG_PURPLE = "\033[45m"
+    BG_CYAN   = "\033[46m"
+    BG_WHITE  = "\033[46m"
+
     @staticmethod
     def red(str):
         return colors.RED + str + colors.RESET
@@ -286,7 +313,11 @@ class colors:
     @staticmethod
     def green(str):
         return colors.GREEN + str + colors.RESET
-    
+
+    @staticmethod
+    def yellow(str):
+        return colors.YELLOW + str + colors.RESET
+        
     @staticmethod
     def blue(str):
         return colors.BLUE + str + colors.RESET

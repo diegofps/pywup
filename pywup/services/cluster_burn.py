@@ -293,7 +293,7 @@ class Proc:
         for name, value in task.combination:
             variables[name] = str(value)
 
-        initrc = [b"%s=\"%s\"" % (a.encode(), b.encode()) for a, b in variables.items()]
+        initrc = [b"export %s=\"%s\"" % (a.encode(), b.encode()) for a, b in variables.items()]
         initrc.insert(0, b"cd \"%s\"" % task.work_dir.encode())
 
         # Execute this task
@@ -517,7 +517,8 @@ class ClusterBurn(Context):
                     info("|MASTER| Ended %d/%d" % (len(self.ended), len(self.procs)))
                 
                 else:
-                    debug("Ignoring action %s from %s, execution is ending" % (msg.source, msg.action))
+                    #debug("Ignoring action %s from %s, execution is ending" % (msg.source, msg.action))
+                    pass
 
             print()
             info("Terminated")
