@@ -47,7 +47,7 @@ def combine_variables(variables, combination=[]):
         name = var.get_name()
         
         for value in var.get_values():
-            combination.append((name, value))
+            combination.append([name, value])
 
             for tmp in combine_variables(variables, combination):
                 yield tmp
@@ -77,8 +77,11 @@ class Msg(dict):
 
 class Task:
 
-    def __init__(self, output_dir, work_dir, experiment_idd, perm_idd, run_idd, task_idd, combination, cmdline):
+    def __init__(self, 
+            experiment_name, output_dir, work_dir, experiment_idd, perm_idd, 
+            run_idd, task_idd, combination, cmdline, cmd_idd):
 
+        self.experiment_name = experiment_name
         self.experiment_idd = experiment_idd
         self.combination = combination
         self.output_dir = output_dir
@@ -88,8 +91,9 @@ class Task:
         self.assigned_to = None
         self.cmdline = cmdline
         self.run_idd = run_idd
-        self.started_ad = None
-        self.ended_ad = None
+        self.cmd_idd = cmd_idd
+        self.started_at = None
+        self.ended_at = None
         self.duration = None
         self.success = None
         self.output = None
@@ -99,7 +103,8 @@ class Task:
     
     def __repr__(self):
         comb = ";".join(str(v) for v in self.combination)
-        return "%d %d %d %d %s %s" % (self.experiment_idd, self.perm_idd, self.run_idd, self.task_idd, comb, self.cmdline)
+        return "%d %d %d %d %s %s" % (self.experiment_idd, self.perm_idd, 
+                    self.run_idd, self.task_idd, comb, self.cmdline)
 
 
 class ConnectorBuilder:
@@ -260,7 +265,6 @@ class Proc:
         self.process = Process(target=self.run, args=(self.queue, queue_master))
         self.process.start()
 
-
     def debug(self, *args):
         debug(self.proc_idd, "|", *args)
 
@@ -317,7 +321,7 @@ class Proc:
         # Execute this task
         #self.debug("Calling execute on connection")
         task.started_at = datetime.now()
-        task.success, task.output, task.status = conn.execute(initrc, task.cmdline)
+        task.success, task.output, task.status = conn.execute(initrc, task.cmdline.encode())
         task.ended_at = datetime.now()
         task.duration = (task.ended_at - task.started_at).total_seconds()
 
@@ -325,17 +329,13 @@ class Proc:
         os.makedirs(task.output_dir, exist_ok=True)
 
         # Dump task info
-        task_info = {
-            "exit_code": task.status,
-            "started_at": task.started_at,
-            "ended_at": task.ended_at,
-            "duration": task.duration,
-            "variables": variables
-        }
+        info = copy.copy(task.__dict__)
+        info["env_variables"] = variables
+        del info["output"]
 
         filepath = os.path.join(task.output_dir, "info.yml")
         with open(filepath, "w") as fout:
-            yaml.dump(task_info, fout, default_flow_style=False)
+            yaml.dump(info, fout, default_flow_style=False)
         
         # Dump task output
         #self.debug("Writing task output")
@@ -423,12 +423,12 @@ class ClusterBurn(Context):
                 for _ in range(self.num_runs):
                     run_idd += 1
 
-                    for cmd in e.commands:
+                    for cmd_idd, cmd in enumerate(e.commands):
                         task_idd += 1
 
-                        output_dir = os.path.join(self.output_dir, "tasks", str(task_idd))
+                        output_dir = os.path.join(self.output_dir, "experiments", e.name, str(task_idd))
 
-                        task = Task(output_dir, work_dir, experiment_idd, perm_idd, run_idd, task_idd, combination, cmd.cmdline.encode())
+                        task = Task(e.name, output_dir, work_dir, experiment_idd, perm_idd, run_idd, task_idd, combination, cmd.cmdline, cmd_idd)
                         tasks.append(task)
         
         return tasks
