@@ -15,16 +15,16 @@ class Experiment:
     def __init__(self, name):
 
         self.work_dir = None
-        self.variables = {}
+        self.variables = []
         self.commands = []
         self.name = name
     
 
     def add_variable(self, v):
-        if v.get_name() in self.variables:
+        if any(v.get_name() == o.get_name() for o in self.variables):
             error("This variable is already defined in this environment")
         else:
-            self.variables[v.get_name()] = v
+            self.variables.append(v)
 
 
     def add_command(self, c):
@@ -36,12 +36,12 @@ class Experiment:
 
 
     def get_variables(self, default_variables):
-        variables = copy.copy(default_variables)
+        variables = { v.get_name() : v for v in default_variables }
         
-        for name, v in self.variables.items():
-            variables[name] = v
+        for v in self.variables:
+            variables[v.get_name()] = v
         
-        return variables
+        return [value for _, value in variables.items()]
 
     
     def get_work_dir(self, default_workdir):

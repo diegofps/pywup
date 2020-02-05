@@ -97,21 +97,10 @@ class Task:
         self.tries = 0
     
     
-    def __str__(self):
+    def __repr__(self):
         comb = ";".join(str(v) for v in self.combination)
         return "%d %d %d %d %s %s" % (self.experiment_idd, self.perm_idd, self.run_idd, self.task_idd, comb, self.cmdline)
 
-
-class DaemonConnector:
-    pass
-
-
-class SSHConnector:
-    pass
-
-
-class BashConnector:
-    pass
 
 class ConnectorBuilder:
 
@@ -123,7 +112,15 @@ class ConnectorBuilder:
         return self.connector(self.machine)
 
 
-class SSHTunnelConnector:
+class VirtualConnector:
+    pass
+
+
+class BashConnector:
+    pass
+
+
+class SSHConnector:
 
     def __init__(self, machine):
 
@@ -357,7 +354,7 @@ class Proc:
 
 class ClusterBurn(Context):
 
-    def __init__(self, cluster, num_runs, output_dir, default_workdir, default_variables, experiments):
+    def __init__(self, cluster, num_runs, output_dir, default_workdir, default_variables, experiments, force):
 
         Context.__init__(self)
 
@@ -367,6 +364,7 @@ class ClusterBurn(Context):
         self.experiments = experiments
         self.num_runs = num_runs
         self.cluster = cluster
+        self.force = force
 
         os.makedirs(self.output_dir, exist_ok=True)
 
@@ -397,10 +395,10 @@ class ClusterBurn(Context):
         if os.path.exists(signature_filepath):
             with open(signature_filepath, "rb") as fin:
                 other_signature = fin.read()
-        #import pdb; pdb.set_trace()
-        if False and other_signature and other_signature != signature:
-            error("This output directory belongs to another experiment combination, use an empty directory or clean it")
-            
+        
+        if other_signature and other_signature != signature and not self.force:
+            error("This output directory belongs to another experiment combination, use an empty directory (recommended) or add parameter --f to overwrite it")
+
         with open(signature_filepath, "wb") as fout:
             fout.write(signature)
 
@@ -416,7 +414,7 @@ class ClusterBurn(Context):
         for e in self.experiments:
             experiment_idd += 1
 
-            variables = [v for _, v in e.get_variables(self.default_variables).items()]
+            variables = e.get_variables(self.default_variables)
             work_dir = e.get_work_dir(self.default_workdir)
 
             for combination in combine_variables(variables):
@@ -429,7 +427,6 @@ class ClusterBurn(Context):
                         task_idd += 1
 
                         output_dir = os.path.join(self.output_dir, "tasks", str(task_idd))
-                        os.makedirs(output_dir, exist_ok=True)
 
                         task = Task(output_dir, work_dir, experiment_idd, perm_idd, run_idd, task_idd, combination, cmd.cmdline.encode())
                         tasks.append(task)
@@ -453,7 +450,7 @@ class ClusterBurn(Context):
                 for _ in range(machine.procs):
                     proc_idd += 1
 
-                    builder = ConnectorBuilder(SSHTunnelConnector, machine)
+                    builder = ConnectorBuilder(SSHConnector, machine)
 
                     env_variables = {
                         "WUP_MACHINE_NAME": machine_name,

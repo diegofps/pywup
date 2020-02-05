@@ -6,6 +6,7 @@ import os
 
 
 def template(cmd, args):
+
     p = Params(cmd, args)
     p.map("clustername", 1, None, "Name of the new cluster", mandatory=True)
     p.map("outputfolder", 1, ".", "Output folder to save the cluster file descriptor")
@@ -15,6 +16,7 @@ def template(cmd, args):
 
 
 def ls(cmd, args):
+
     p = Params(cmd, args)
 
     if p.run():
@@ -23,6 +25,7 @@ def ls(cmd, args):
 
 
 def open(cmd, args):
+    
     p = Params(cmd, args)
     p.map("clustername", 1, None, "Name of the new cluster to open", mandatory=True)
 
@@ -31,6 +34,7 @@ def open(cmd, args):
 
 
 def exec(cmd, args):
+
     p = Params(cmd, args, limit_parameters=False)
     p.map("command", 1, None, "Command to be executed", mandatory=True)
     p.map("--m", 1, None, "Execute command on a single machine")
@@ -43,6 +47,7 @@ def exec(cmd, args):
 
 
 def send(cmd, args):
+
     p = Params(cmd, args)
     p.map("src", 1, None, "Source path to the file inside the host", mandatory=True)
     p.map("dst", 1, None, "Destination path inside the remote machines")
@@ -56,6 +61,7 @@ def send(cmd, args):
 
 
 def get(cmd, args):
+
     p = Params(cmd, args)
     p.map("src", 1, None, "Path to the source files inside the remote machines", mandatory=True)
     p.map("dst", 1, None, "Destination folder inside the host to store the received files, each machine will have its own folder")
@@ -69,6 +75,7 @@ def get(cmd, args):
 
 
 def doctor(cmd, args):
+
     p = Params(cmd, args)
 
     if p.run():
@@ -76,6 +83,7 @@ def doctor(cmd, args):
 
 
 def pbash(cmd, args):
+
     p = Params(cmd, args)
     p.map("--v", 0, None, "Prints sdtout from the first machine. Usefull when issuing interactive commands")
 
@@ -84,14 +92,16 @@ def pbash(cmd, args):
 
 
 def burn(cmd, args):
+
     from pywup.services.cluster_burn import ClusterBurn
 
     current_experiment = None
-    default_variables = {}
+    default_variables = []
     default_workdir = None
     output_dir = "./burn"
     experiments = []
     cluster = False
+    force = False
     num_runs = 1
 
     def require_experiment():
@@ -108,6 +118,9 @@ def burn(cmd, args):
         
         elif cmd == "--cluster":
             cluster = True
+        
+        elif cmd == "--f":
+            force = True
         
         elif cmd == "--w":
             if current_experiment is None:
@@ -146,20 +159,21 @@ def burn(cmd, args):
                 error("Unknown variable type:", cmd)
 
             if current_experiment is None:
-                if v.get_name() in default_variables:
+                if any(v.get_name() == o.get_name() for o in default_variables):
                     error("Default variable defined more than once:", v.get_name())
                 else:
-                    default_variables[v.get_name()] = v
+                    default_variables.append(v)
             else:
                 current_experiment.add_variable(v)
         
         else:
             error("Unknown parameter:", cmd)
     
-    ClusterBurn(cluster, num_runs, output_dir, default_workdir, default_variables, experiments).start()
+    ClusterBurn(cluster, num_runs, output_dir, default_workdir, default_variables, experiments, force).start()
 
 
 def main(cmd, args):
+
     r = Route(args, cmd)
 
     r.map("template", template, "Create an empty cluster file that you can modify to represent a real cluster")
