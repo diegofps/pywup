@@ -1,0 +1,40 @@
+make r6 ds=Dog fps=30 extra='-gridSize 15 -cdMaxTrains 30 -cdThreshold 0.8 -cdNumDiscs 10 -model z -ztRamBits 5 -ztReplicate 2 -ztMinConfidence 0'
+
+DATASETS="`(cd $HOME/Sources/teste/data/otg100 && ls -d */ | sed -r 's:/::' | tr '\n' ' ')`"
+DATASETS="`(cd $HOME/Sources/dory/src/data/otg100 && ls -d */ | sed -r 's:/::' | tr '\n' ' ')`"
+
+time wup burn --cluster \
+    --redo
+    --only :128 \
+    --w '/home/wup/Sources/teste' \
+    --o './burn' \
+    --runs 100 \
+    --v DS_NAME $DATASETS \
+\
+    --e WISARD \
+    --c "make r6 ds=\$DS_NAME fps=30 extra='-gridSize 15 -cdMaxTrains 30 -cdThreshold 0.8 -cdNumDiscs 10 -model z -ztRamBits 5 -ztReplicate 2 -ztMinConfidence 0'"
+
+
+
+--------------------------------------------------------------------------------
+
+diego@192.168.1.121
+dsouza@192.168.1.105
+diegofps@192.168.1.107
+diego@localhost
+
+
+*Lexar LJDS57-32ABNL*
+Computer Hospital R$ 44,00
+Av Rio Branco 156 loja 225
+
+*Kingston DTIG4/32GB - BOX*
+Triunfo Eletrônico R$ 28,00
+Av Rio Branco 156 sobreloja 329 st C
+
+*Sandisk SDDD3-032G-G46 - BOX*
+RH Informática R$ 43,90
+Av Rio Branco 156 loja 226 e 227 st 22
+
+ShotPix R$ 43,90
+Av Rio Branco 156 loja 222 st 2

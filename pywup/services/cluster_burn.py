@@ -408,12 +408,6 @@ class ClusterBurn(Context):
             with open(signature_filepath, "rb") as fin:
                 other_signature = fin.read()
 
-        print(str(self.experiments))
-        print(str(self.default_variables))
-        print(signature)
-        print(other_signature)
-        input("Enter")
-        
         if other_signature and other_signature != signature and not self.no_check:
             error("This output directory belongs to another experiment combination, use an empty directory (recommended) or add parameter --f to overwrite it")
 

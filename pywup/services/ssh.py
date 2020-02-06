@@ -10,12 +10,18 @@ id_wup = expand_path("~/.ssh/id_rsa")
 
 class BasicSSH:
 
-    def __init__(self, user, ip, port=22):
+    def __init__(self, user, ip, port=None):
 
-        self.credential = ip if user is None else user + "@" + ip 
+        self.credential = ip
         self.port = port
         self.user = user
         self.ip = ip
+
+        if user:
+            self.credential = user + "@" + self.credential
+        
+        if port:
+            self.credential = self.credential + ":" + self.port
 
         self.assert_key_exists()
 
