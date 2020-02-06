@@ -1,5 +1,6 @@
 from pywup.services.system import expand_path, error, warn, info, debug, critical, readlines, colors
 from pywup.services.state_machine import StateMachine
+from pywup.services.clusterfile import ClusterFile
 from pywup.services.context import Context
 from pywup.services.ssh import BasicSSH
 
@@ -190,10 +191,10 @@ class SSHConnector:
                     return
                 
                 if found_ssh_off:
-                    warn("SSH connection has failed, trying again")
+                    warn("SSH connection against %s has failed, trying again" % self.credential)
                     break
 
-            debug("Sleeping before next try...")
+            warn("Sleeping before next try...")
             time.sleep(2)
             conn_try += 1
 
@@ -325,8 +326,11 @@ class Proc:
         task.ended_at = datetime.now()
         task.duration = (task.ended_at - task.started_at).total_seconds()
 
-        # Create the task folder
+        # Create the task folder and clean any old .done file
+        done_filepath = os.path.join(task.output_dir, ".done")
         os.makedirs(task.output_dir, exist_ok=True)
+        if os.path.exists(done_filepath):
+            os.remove(done_filepath)
 
         # Dump task info
         info = copy.copy(task.__dict__)
@@ -342,8 +346,14 @@ class Proc:
         filepath = os.path.join(task.output_dir, "output.txt")
         with open(filepath, "wb") as fout:
             fout.writelines(task.output)
-    
-        if not task.success:
+
+        if task.success:
+            # Create .done file
+            with open(done_filepath, 'a'):
+                os.utime(done_filepath, None)
+
+        else:
+            # Write output to stdout if task has failed
             critical("Task %d has failed. Exit code: %s" % (task.task_idd, task.status))
             for line in task.output:
                 os.write(sys.stdout.fileno(), line)
@@ -354,29 +364,29 @@ class Proc:
 
 class ClusterBurn(Context):
 
-    def __init__(self, cluster, num_runs, output_dir, default_workdir, default_variables, experiments, force):
+    def __init__(self, cluster, redo_tasks, tasks_filter, num_runs, output_dir, default_workdir, default_variables, experiments, no_check):
 
         Context.__init__(self)
 
         self.default_variables = default_variables
         self.output_dir = expand_path(output_dir)
         self.default_workdir = default_workdir
+        self.tasks_filter = tasks_filter
         self.experiments = experiments
+        self.redo_tasks = redo_tasks
+        self.no_check = no_check
         self.num_runs = num_runs
         self.cluster = cluster
-        self.force = force
 
         os.makedirs(self.output_dir, exist_ok=True)
 
 
     def start(self):
 
-        cluster = self.clusterfile()
-
         self.tasks = self._start_tasks()
         self._validate_signature()
 
-        self.procs = self._start_cluster(cluster)
+        self.procs = self._start_cluster()
         self._burn()
 
 
@@ -385,7 +395,9 @@ class ClusterBurn(Context):
         key = hashlib.md5()
 
         key.update(str(self.num_runs).encode())
-        key.update(str(self.tasks).encode())
+        #key.update(str(self.tasks).encode())
+        key.update(str(self.experiments).encode())
+        key.update(str(self.default_variables).encode())
 
         signature = key.digest()
         other_signature = b""
@@ -395,8 +407,14 @@ class ClusterBurn(Context):
         if os.path.exists(signature_filepath):
             with open(signature_filepath, "rb") as fin:
                 other_signature = fin.read()
+
+        print(str(self.experiments))
+        print(str(self.default_variables))
+        print(signature)
+        print(other_signature)
+        input("Enter")
         
-        if other_signature and other_signature != signature and not self.force:
+        if other_signature and other_signature != signature and not self.no_check:
             error("This output directory belongs to another experiment combination, use an empty directory (recommended) or add parameter --f to overwrite it")
 
         with open(signature_filepath, "wb") as fout:
@@ -426,15 +444,31 @@ class ClusterBurn(Context):
                     for cmd_idd, cmd in enumerate(e.commands):
                         task_idd += 1
 
+                        if self.tasks_filter and not any(a<= task_idd < b for a, b in self.tasks_filter):
+                            continue
+
                         output_dir = os.path.join(self.output_dir, "experiments", e.name, str(task_idd))
+
+                        if not self.redo_tasks and os.path.exists(os.path.join(output_dir, ".done")):
+                            continue
 
                         task = Task(e.name, output_dir, work_dir, experiment_idd, perm_idd, run_idd, task_idd, combination, cmd.cmdline, cmd_idd)
                         tasks.append(task)
-        
-        return tasks
-    
 
-    def _start_cluster(self, cluster):
+        return tasks
+
+
+    def _start_cluster(self):
+
+        if self.cluster:
+            cluster = self.clusterfile()
+
+        else:
+            cluster = ClusterFile()
+            m = cluster.create_machine("local_arch", "local")
+            m.hostname = "localhost"
+            m.procs = os.cpu_count()
+
         arch_idd = -1
         machine_idd = -1
         proc_idd = -1

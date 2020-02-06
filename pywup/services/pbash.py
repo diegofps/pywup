@@ -68,7 +68,7 @@ class PBash:
 
 
     def loop(self):
-        
+
         import readline
 
         while True:
@@ -102,7 +102,7 @@ class PBash:
 
                 elif cmd == "exit":
                     break
-                    
+
                 else:
                     #self.print_start_secret()
                     self.execute(cmd)

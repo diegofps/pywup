@@ -12,7 +12,7 @@ class BasicSSH:
 
     def __init__(self, user, ip, port=22):
 
-        self.credential = user + "@" + ip
+        self.credential = ip if user is None else user + "@" + ip 
         self.port = port
         self.user = user
         self.ip = ip

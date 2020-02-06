@@ -10,6 +10,10 @@ class Command:
         self.env_name = env
 
 
+    def __repr__(self):
+        return "Command %s; %s" % (self.cmdline, self.env_name)
+
+
 class Experiment:
 
     def __init__(self, name):
@@ -19,6 +23,10 @@ class Experiment:
         self.commands = []
         self.name = name
     
+
+    def __repr__(self):
+        return "Experiment %s; %s; %s" % (self.name, str(self.variables), str(self.commands))
+
 
     def add_variable(self, v):
         if any(v.get_name() == o.get_name() for o in self.variables):
@@ -66,6 +74,9 @@ class ListVariable:
     def get_values(self):
         return self.values
 
+    def __repr__(self):
+        return "ListVariable %s; %s" % (self.name, str(self.values))
+
 
 class RunVariable:
     
@@ -79,16 +90,20 @@ class RunVariable:
     def get_values(self):
         return self.values
 
+    def __repr__(self):
+        return "RunVariable %s; %s" % (self.name, str(self.values))
+
 
 class ArithmeticVariable:
     
     def __init__(self, args):
         self.name = args.pop_parameter()
         
-        first = float(args.pop_parameter())
-        last  = float(args.pop_parameter())
-        step  = float(args.pop_parameter()) if args.has_parameter() else 1
-        self.values = self.arange(first, last, step)
+        self.first = float(args.pop_parameter())
+        self.last  = float(args.pop_parameter())
+        self.step  = float(args.pop_parameter()) if args.has_parameter() else 1
+
+        self.values = self.arange(self.first, self.last, self.step)
     
     def get_name(self):
         return self.name
@@ -106,29 +121,35 @@ class ArithmeticVariable:
         
         return res
 
+    def __repr__(self):
+        return "ArithmeticVariable %s; %f %f %f; %s" % (self.name, self.first, self.last, self.step, str(self.values))
+
 
 class GeometricVariable:
     
     def __init__(self, args):
         self.name = args.pop_parameter()
         
-        first = float(args.pop_parameter())
-        last  = float(args.pop_parameter())
-        step  = float(args.pop_parameter()) if args.has_parameter() else 2.0
+        self.first = float(args.pop_parameter())
+        self.last  = float(args.pop_parameter())
+        self.step  = float(args.pop_parameter()) if args.has_parameter() else 2.0
         
-        if step == 1:
+        if self.step == 1:
             raise RuntimeError("step cannot be equal to 1")
         
         self.values = list()
-        current = first
+        current = self.first
         
-        while current < last:
+        while current < self.last:
             self.values.append(current)
-            current = current * step
+            current = current * self.step
     
     def get_name(self):
         return self.name
     
     def get_values(self):
         return self.values
+
+    def __repr__(self):
+        return "GeometricVariable %s; %f %f %f; %s" % (self.name, self.first, self.last, self.step, str(self.values))
 

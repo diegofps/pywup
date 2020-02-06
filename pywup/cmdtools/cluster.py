@@ -1,7 +1,8 @@
 from pywup.services.burn import Experiment, ListVariable, GeometricVariable, ArithmeticVariable
-from pywup.services.system import error, Params, Route, print_table
+from pywup.services.system import error, Params, Route, print_table, colors
 from pywup.services.cluster import Cluster
 
+import sys
 import os
 
 
@@ -99,9 +100,11 @@ def burn(cmd, args):
     default_variables = []
     default_workdir = None
     output_dir = "./burn"
+    redo_tasks = False
+    tasks_filter = []
     experiments = []
+    no_check = False
     cluster = False
-    force = False
     num_runs = 1
 
     def require_experiment():
@@ -116,11 +119,30 @@ def burn(cmd, args):
             current_experiment = Experiment(name)
             experiments.append(current_experiment)
         
+        elif cmd == "--only":
+            while args.has_parameter():
+                p = args.pop_parameter().strip().split(":")
+                
+                if len(p) != 2:
+                    a = colors.white("first:last")
+                    b = colors.white(":last")
+                    c = colors.white("first:")
+                    d = colors.white(":")
+                    error("Valid formats for --only are: %s or %s or %s or %s" % (a, b, c, d))
+                
+                first = int(p[0]) if p[0] else 0
+                final = int(p[1]) if p[1] else sys.maxsize
+
+                tasks_filter.append((first, final))
+        
         elif cmd == "--cluster":
             cluster = True
         
-        elif cmd == "--f":
-            force = True
+        elif cmd == "--redo":
+            redo_tasks = True
+        
+        elif cmd == "--no-check":
+            no_check = True
         
         elif cmd == "--w":
             if current_experiment is None:
@@ -169,7 +191,7 @@ def burn(cmd, args):
         else:
             error("Unknown parameter:", cmd)
     
-    ClusterBurn(cluster, num_runs, output_dir, default_workdir, default_variables, experiments, force).start()
+    ClusterBurn(cluster, redo_tasks, tasks_filter, num_runs, output_dir, default_workdir, default_variables, experiments, no_check).start()
 
 
 def main(cmd, args):
