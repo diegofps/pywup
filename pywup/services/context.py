@@ -7,6 +7,49 @@ import re
 import os
 
 
+def lookup_cluster(name):
+
+    candidate = expand_path(name)
+
+    if not os.path.exists(candidate):
+        candidate = expand_path("./" + name + ".cluster")
+        if not os.path.exists(candidate):
+            error("Could not find a cluster definition for:", name)
+    else:
+        name = os.path.splitext(os.path.basename(name))[0]
+    
+    if "__" in name:
+        error("Cluster names must not contain two consecutive underscores (__)")
+
+    if name == "temp":
+        error("You cannot use a cluster named temp")
+    
+    cluster = ClusterFile(candidate)
+
+    return name, candidate, cluster
+
+
+def lookup_env(name):
+    candidate = expand_path(name)
+
+    if not os.path.exists(candidate):
+        candidate = expand_path("./" + name + ".env")
+        if not os.path.exists(candidate):
+            candidate = expand_path("~/.wup/envs/" + name + "/" + name + ".env")
+            if not os.path.exists(candidate):
+                error("Could not find an env declaration for:", name)
+    else:
+        name = os.path.splitext(os.path.basename(name))[0]
+    
+    if "__" in name:
+        error("Names must not contain two consecutive underscores (__)")
+
+    if name == "temp":
+        error("You cannot use an env named temp")
+    
+    return name, candidate
+
+
 class Context:
 
     def __init__(self):

@@ -5,6 +5,19 @@ import sys
 import os
 
 
+def use(cmd, args):
+
+    p = Params(cmd, args)
+    p.map("name", 1, None, "Name or path of the clusterfile to use")
+    p.map("--a", -1, [], "Filter cluster machines by one or more architecture")
+    p.map("--n", -1, [], "Filter cluster machines by one or more machine name")
+    p.map("--t", -1, [], "Filter cluster machines by one or more tag name")
+    p.map("--p", -1, [], "Filter cluster machines by one or more pair KEY=VALUE")
+
+    if p.run():
+        Cluster().use(p.name, p.flatten__a, p.flatten__n, p.flatten__t, p.flatten__p)
+
+
 def template(cmd, args):
 
     p = Params(cmd, args)
@@ -95,6 +108,7 @@ def main(cmd, args):
 
     r = Route(args, cmd)
 
+    r.map("use", use, "Specify which clusterfile to use and which filters to apply")
     r.map("template", template, "Create an empty cluster file that you can modify to represent a real cluster")
     r.map("ls", ls, "Summarizes all machines in this cluster")
     r.map("open", open, "Opens a remote machine using ssh")

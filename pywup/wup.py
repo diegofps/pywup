@@ -1,19 +1,15 @@
 #!/usr/bin/env python3
 
 from pywup.services.burn import Experiment, ListVariable, GeometricVariable, ArithmeticVariable
-from pywup.services.system import abort, error, WupError, Route, Params, colors
-from pywup.consts import version as wup_version
+from pywup.services.system import abort, error, WupError, Route, Params, colors, expand_path
 from pywup.services.context import Context
-
+from pywup.services.io import Preferences
 from pywup import cmdtools
 
+import pywup.consts as w
 import sys
 import os
 
-
-def use(cmd, args):
-    from pywup.cmdtools.use import main
-    main(cmd, args)
 
 def collect(cmd, args):
     from pywup.cmdtools.collect import main
@@ -52,7 +48,48 @@ def virtual(cmd, args):
     main(cmd, args)
 
 def about(cmd, args):
-    print(wup_version)
+
+    def show(a,b):
+        if b:
+            if type(b) is list:
+                b = ",".join(b)
+            print(colors.white(a), colors.green(b))
+        else:
+            print(colors.white(a), colors.red("None"))
+
+    pref = Preferences()
+    print()
+
+    show("name:", w.name)
+    show("version:", w.version)
+    show("author:", w.author)
+    show("description:", w.description)
+    print()
+
+    show("env_name:", pref.env_name)
+    show("env_filepath:", pref.env_filepath)
+    print()
+
+    show("cluster_name:", pref.cluster_name)
+    show("cluster_env_name:", pref.cluster_env_name)
+    show("cluster_filepath:", pref.cluster_filepath)
+    show("cluster_env_filepath:", pref.cluster_env_filepath)
+    print()
+
+    show("filter_archs:", pref.filter_archs)
+    show("filter_names:", pref.filter_names)
+    show("filter_tags:", pref.filter_tags)
+    show("filter_params:", pref.filter_params)
+    print()
+
+    try:
+        with open(expand_path("~/.wup/state"), "r") as fin:
+            print(colors.white("State:"), colors.green(fin.readline()))
+    except FileNotFoundError:
+        print(colors.white("State:"), colors.red("None"))
+
+    print()
+
 
 def burn(cmd, args):
 
@@ -159,7 +196,6 @@ def burn(cmd, args):
 def wup(*params):
     r = Route(sys.argv[1:], "wup")
 
-    r.map("use", use, "Set current env, cluster or architecture files")
     r.map("collect", collect, "Run an app multiple times, variating its parameters and collecting its output attributes")
     r.map("burn", burn, "Runs distributed experiments")
     r.map("heatmap", heatmap, "Plot a heatmap image using the data collected (requires matplotlib)")
@@ -170,7 +206,7 @@ def wup(*params):
     r.map("menv", menv, "Simulate a cluster on your local machine using docker containers and wup environments")
     r.map("cluster", cluster, "Interact with the current cluster")
     r.map("virtual", virtual, "Manage wup environments as a virtual cluster deployed on top of a real cluster")
-    r.map("about", about, "Display wup info")
+    r.map("about", about, "Display info")
     
     r.run(handleError=True)
 

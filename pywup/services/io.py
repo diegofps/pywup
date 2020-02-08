@@ -1,51 +1,7 @@
 from pywup.services.system import error, expand_path, colors
-from pywup.services.clusterfile import ClusterFile
 
 import yaml
 import os
-
-
-def lookup_cluster(name):
-
-    candidate = expand_path(name)
-
-    if not os.path.exists(candidate):
-        candidate = expand_path("./" + name + ".cluster")
-        if not os.path.exists(candidate):
-            error("Could not find a cluster definition for:", name)
-    else:
-        name = os.path.splitext(os.path.basename(name))[0]
-    
-    if "__" in name:
-        error("Cluster names must not contain two consecutive underscores (__)")
-
-    if name == "temp":
-        error("You cannot use a cluster named temp")
-    
-    cluster = ClusterFile(candidate)
-
-    return name, candidate, cluster
-
-
-def lookup_env(name):
-    candidate = expand_path(name)
-
-    if not os.path.exists(candidate):
-        candidate = expand_path("./" + name + ".env")
-        if not os.path.exists(candidate):
-            candidate = expand_path("~/.wup/envs/" + name + "/" + name + ".env")
-            if not os.path.exists(candidate):
-                error("Could not find an env declaration for:", name)
-    else:
-        name = os.path.splitext(os.path.basename(name))[0]
-    
-    if "__" in name:
-        error("Names must not contain two consecutive underscores (__)")
-
-    if name == "temp":
-        error("You cannot use an env named temp")
-    
-    return name, candidate
 
 
 class Preferences:
@@ -60,6 +16,11 @@ class Preferences:
     ENV_FILEPATH = "ENV_FILEPATH"
     CLUSTER_FILEPATH = "CLUSTER_FILEPATH"
     CLUSTER_ENV_FILEPATH = "CLUSTER_ENV_FILEPATH"
+
+    FILTER_ARCHS = "FILTER_ARCHS"
+    FILTER_NAMES = "FILTER_NAMES"
+    FILTER_TAGS = "FILTER_TAGS"
+    FILTER_PARAMS = "FILTER_PARAMS"
 
 
     def __init__(self):
@@ -93,20 +54,36 @@ class Preferences:
         env_name = self.env_name
         cluster_name = self.cluster_name
         cluster_env = self.cluster_env_name
-        arch = self.arch_name
+
+        filter_params = self.filter_params
+        filter_archs = self.filter_archs
+        filter_names = self.filter_names
+        filter_tags = self.filter_tags
 
         env_name = env_name if env_name else "-"
-        arch = arch if arch else "-"
 
         if cluster_name:
             if cluster_env:
                 remote = cluster_env + "@" + cluster_name
             else:
                 remote = cluster_name
+            
+            if filter_archs:
+                remote += ".a[%s]" % ",".join(filter_archs)
+            
+            if filter_tags:
+                remote += ".t[%s]" % ",".join(filter_tags)
+
+            if filter_params:
+                remote += ".p[%s]" % ",".join([key + "=" + value for key, value in filter_params])
+            
+            if filter_names:
+                remote += ".n[%s]" % ",".join(filter_names)
+            
         else:
             remote = "-"
         
-        state = env_name + "|" + remote + "|" + arch
+        state = env_name + "|" + remote
         
         folderpath = os.path.expanduser("~/.wup")
         os.makedirs(folderpath, exist_ok=True)
@@ -156,3 +133,8 @@ Preferences.arch_name = __propertify(Preferences.ARCH_NAME)
 Preferences.env_filepath = __propertify(Preferences.ENV_FILEPATH)
 Preferences.cluster_filepath = __propertify(Preferences.CLUSTER_FILEPATH)
 Preferences.cluster_env_filepath = __propertify(Preferences.CLUSTER_ENV_FILEPATH)
+
+Preferences.filter_archs = __propertify(Preferences.FILTER_ARCHS)
+Preferences.filter_names = __propertify(Preferences.FILTER_NAMES)
+Preferences.filter_tags = __propertify(Preferences.FILTER_TAGS)
+Preferences.filter_params = __propertify(Preferences.FILTER_PARAMS)

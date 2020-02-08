@@ -1,6 +1,7 @@
 from pywup.services.system import error, rprint, WupError
 from pywup.services.docker import get_container_ip
 from pywup.services.envfile import EnvFile
+from pywup.services.io import Preferences
 from pywup.services.system import run
 
 import copy
@@ -180,6 +181,7 @@ class ClusterFile:
 
         return data
 
+
     def init_from_file(self, filepath):
         with open(filepath, "r") as fin:
             y = yaml.load(fin, Loader=yaml.FullLoader)
@@ -194,6 +196,42 @@ class ClusterFile:
             for machine_name, y_machine in y_machines.items():
                 m = self.create_machine(arch_name, machine_name)
                 m.init_from(y_machine)
+        
+        self.filter_machines()
+
+    
+    def filter_machines(self):
+        pref = Preferences()
+
+        filter_params = pref.filter_params
+        filter_archs = pref.filter_archs
+        filter_names = pref.filter_names
+        filter_tags = pref.filter_tags
+
+        new_arch = {}
+        new_machines = []
+        for arch_name, machines in self.archs.items():
+            if filter_archs and not arch_name in filter_archs:
+                continue
+
+            for machine_name, machine in machines.items():
+                if filter_names and not machine_name in filter_names:
+                    continue
+
+                if filter_tags and not any(tag in machine.tags for tag in filter_tags):
+                    continue
+                
+                if filter_params and not any((key in machine.params and machine.params[key] == value) for key, value in filter_params):
+                    continue
+
+                if not arch_name in new_arch:
+                    new_arch[arch_name] = {}
+                
+                new_arch[arch_name][machine_name] = machine
+                new_machines.append(machine)
+        
+        self.archs = new_arch
+        self.machines = new_machines
 
 
     def export(self, filepath):

@@ -1,5 +1,6 @@
 from pywup.services.system import run, error, quote, colors
-from pywup.services.context import Context
+from pywup.services.context import Context, lookup_env
+from pywup.services.io import Preferences
 from pywup.services import docker
 
 import os
@@ -9,6 +10,26 @@ class Env(Context):
 
     def __init__(self):
         Context.__init__(self)
+
+
+    def use(self, name):
+        pref = Preferences()
+
+        if name is None:
+            print(pref.env_filepath)
+            return
+
+        if name == "-":
+            pref.env_name = None
+            pref.env_filepath = None
+        
+        else:
+            name, filepath = lookup_env(name)
+
+            pref.env_name = name
+            pref.env_filepath = filepath
+        
+        pref.save()
 
 
     def ip(self):

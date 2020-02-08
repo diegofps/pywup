@@ -578,8 +578,12 @@ class Params:
                         values = True
                     elif item.length == 1:
                         values = self._args.pop_parameter()
-                    else:
+                    elif item.length > 1:
                         values = [self._args.pop_parameter() for _ in range(item.length)]
+                    else:
+                        values = []
+                        while self._args.has_parameter():
+                            values.append(self._args.pop_parameter())
                     
                     item.set(values)
                 
@@ -630,6 +634,10 @@ class Params:
     def __getattr__(self, name):
         if name.startswith("every__"):
             return Params.get_all(self, name[5:].replace("_", "-"))
+        
+        elif name.startswith("flatten__"):
+            xxx = Params.get_all(self, name[7:].replace("_", "-"))
+            return [x for xx in xxx for x in xx]
         
         elif name.startswith("every_"):
             return Params.get_all(self, name[5:].replace("_", "-"))

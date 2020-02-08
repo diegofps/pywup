@@ -4,6 +4,13 @@ from pywup.services.env import Env
 import sys
 import os
 
+def do_use(cmd, args):
+    p = Params(cmd, args)
+    p.map("envfile", 1, None, "Name or path of the envfile to use")
+    
+    if p.run():
+        Env().use(p.envfile)
+
 
 def do_build(cmd, args):
     p = Params(cmd, args)
@@ -147,6 +154,7 @@ def do_send(cmd, args):
 def main(cmd, args):
     r = Route(args, cmd)
 
+    r.map("use", do_use, "Sets an envfile to use")
     r.map("build", do_build, "Builds the current environment")
     r.map("open", do_open, "Opens the environment, starting it if necessary")
     r.map("start", do_start, "Starts the environment container")

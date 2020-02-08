@@ -1,7 +1,8 @@
 from pywup.services.system import run, error, quote, colors, expand_path, rprint, yprint, wprint, quote_single
+from pywup.services.context import Context, lookup_cluster
 from pywup.services.clusterfile import ClusterFile
 from pywup.services.pbash import PBash, Term
-from pywup.services.context import Context
+from pywup.services.io import Preferences
 from pywup.services.ssh import BasicSSH
 
 from collections import defaultdict
@@ -17,6 +18,71 @@ class Cluster(Context):
 
     def __init__(self):
         Context.__init__(self)
+
+
+    def use(self, name, archs, names, tags, params):
+        pref = Preferences()
+
+        if not name and not archs and not names and not tags and not params:
+            print(pref.cluster_filepath)
+            return
+
+        if name == "-":
+            pref.cluster_name = None
+            pref.cluster_filepath = None
+            pref.cluster_env_name = None
+            pref.cluster_env_filepath = None
+
+            pref.filter_params = None
+            pref.filter_archs = None
+            pref.filter_names = None
+            pref.filter_tags = None
+        
+        elif name:
+            name, filepath, cluster = lookup_cluster(name)
+
+            if cluster.docker_based:
+                pref.cluster_name = name
+                pref.cluster_filepath = filepath
+                pref.cluster_env_name = cluster.env_name
+                pref.cluster_env_filepath = cluster.env_filepath
+
+            else:
+                pref.cluster_name = name
+                pref.cluster_filepath = filepath
+                pref.cluster_env_name = None
+                pref.cluster_env_filepath = None
+
+        if archs:
+            if "-" in archs:
+                pref.filter_archs = None
+            else:
+                pref.filter_archs = archs
+        
+        if names:
+            if "-" in names:
+                pref.filter_names = None
+            else:
+                pref.filter_names = names
+        
+        if tags:
+            if "-" in tags:
+                pref.filter_tags = None
+            else:    
+                pref.filter_tags = tags
+
+        if params:
+            if "-" in params:
+                pref.filter_params = None
+            else:
+                params = [p.strip().split("=") for p in params]
+                if params and any(len(p) != 2 for p in params):
+                    error("--p only accepts parameters in the format KEY=VALUE")
+                
+                pref.filter_params = params
+        
+        pref.save()
+        
 
     
     def template(self, clustername, outfolder):
