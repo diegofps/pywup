@@ -209,7 +209,7 @@ class ClusterFile:
         filter_tags = pref.filter_tags
 
         new_arch = {}
-        new_machines = []
+        new_machines = {}
         for arch_name, machines in self.archs.items():
             if filter_archs and not arch_name in filter_archs:
                 continue
@@ -228,7 +228,7 @@ class ClusterFile:
                     new_arch[arch_name] = {}
                 
                 new_arch[arch_name][machine_name] = machine
-                new_machines.append(machine)
+                new_machines[machine_name] = machine
         
         self.archs = new_arch
         self.machines = new_machines

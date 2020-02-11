@@ -31,12 +31,12 @@ KEY_CMD_ON = b'15e6896c-3ea7-42a0-aa32-23e2ab3c0e12'
 KEY_CMD_OFF = b'e04a4348-8092-46a6-8e0c-d30d10c86fb3'
 KEY_OUTPUT_CODE = b'2a25b3bf-efd5-4d38-81dd-1065c683ec85'
 
-echo = lambda x: b"echo -e \"%s\"" % x.replace(b"-", b"-\b-")
+echo = lambda x: b" echo -e \"%s\"" % x.replace(b"-", b"-\b-")
 
 ECHO_SSH_ON = echo(KEY_SSH_ON)
 ECHO_SSH_OFF = echo(KEY_SSH_OFF)
 ECHO_CMD_ON = echo(KEY_CMD_ON)
-ECHO_CMD_OFF = b"echo -e \"\n$? %s\"" % KEY_CMD_OFF.replace(b"-", b"-\b-")
+ECHO_CMD_OFF = b" echo -en \"\n $? %s\"" % KEY_CMD_OFF.replace(b"-", b"-\b-")
 
 
 def combine_variables(variables, combination=[]):
@@ -139,7 +139,7 @@ class SSHConnector:
         self.start_bash()
         
         self.credential = self.machine.credential.encode()
-        self.conn_string = b"ssh -t %s '%s ; bash' ; %s\n" % (self.credential, ECHO_SSH_ON, ECHO_SSH_OFF)
+        self.conn_string = b" ssh -t %s '%s ; bash' ; %s\n" % (self.credential, ECHO_SSH_ON, ECHO_SSH_OFF)
 
         self.connect()
 
@@ -195,7 +195,7 @@ class SSHConnector:
                     break
 
             warn("Sleeping before next try...")
-            time.sleep(2)
+            time.sleep(1)
             conn_try += 1
 
 
@@ -212,7 +212,7 @@ class SSHConnector:
         p3 = b" ; ".join(cmds)
         p4 = ECHO_CMD_OFF
 
-        cmd_str = b"%s ; %s ; %s ; %s\n" % (p1, p2, p3, p4)
+        cmd_str = b" %s ; %s ; %s ; %s\n" % (p1, p2, p3, p4)
 
         os.write(self.master, cmd_str)
         
@@ -244,7 +244,7 @@ class SSHConnector:
                     output_end = i
             
             if output_end is not None:
-                status = lines[output_end].split()[0].decode("utf-8") if output_end < len(lines) else "255"
+                status = lines[output_end].strip().split()[0].decode("utf-8") if output_end < len(lines) else "255"
                 break
 
         return (status == "0"), lines[output_start:output_end], status
@@ -409,7 +409,7 @@ class ClusterBurn(Context):
                 other_signature = fin.read()
 
         if other_signature and other_signature != signature and not self.no_check:
-            error("This output directory belongs to another experiment combination, use an empty directory (recommended) or add parameter --f to overwrite it")
+            error("This output directory belongs to another experiment combination, use an empty directory (recommended) or add parameter --no-check to overwrite it")
 
         with open(signature_filepath, "wb") as fout:
             fout.write(signature)

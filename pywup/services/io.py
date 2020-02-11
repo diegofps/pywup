@@ -106,10 +106,9 @@ class Getter:
         self.name = name
     
     def __call__(self, other):
-        if self.name in other.data:
-            return other.data[self.name]
-        else:
-            return self.default
+        if not self.name in other.data:
+            other.data[self.name] = self.default
+        return other.data[self.name]
 
 
 class Setter:
@@ -121,8 +120,8 @@ class Setter:
         other.data[self.name] = value
 
 
-def __propertify(key):
-    return property(Getter(key), Setter(key))
+def __propertify(key, default=None):
+    return property(Getter(key, default=default), Setter(key))
 
 
 Preferences.env_name = __propertify(Preferences.ENV_NAME)
@@ -134,7 +133,7 @@ Preferences.env_filepath = __propertify(Preferences.ENV_FILEPATH)
 Preferences.cluster_filepath = __propertify(Preferences.CLUSTER_FILEPATH)
 Preferences.cluster_env_filepath = __propertify(Preferences.CLUSTER_ENV_FILEPATH)
 
-Preferences.filter_archs = __propertify(Preferences.FILTER_ARCHS)
-Preferences.filter_names = __propertify(Preferences.FILTER_NAMES)
-Preferences.filter_tags = __propertify(Preferences.FILTER_TAGS)
-Preferences.filter_params = __propertify(Preferences.FILTER_PARAMS)
+Preferences.filter_archs = __propertify(Preferences.FILTER_ARCHS, default=[])
+Preferences.filter_names = __propertify(Preferences.FILTER_NAMES, default=[])
+Preferences.filter_tags = __propertify(Preferences.FILTER_TAGS, default=[])
+Preferences.filter_params = __propertify(Preferences.FILTER_PARAMS, default=[])

@@ -54,32 +54,51 @@ class Cluster(Context):
                 pref.cluster_env_filepath = None
 
         if archs:
-            if "-" in archs:
-                pref.filter_archs = None
-            else:
-                pref.filter_archs = archs
+            if pref.filter_archs is None:
+                pref.filter_archs = []
+            items = pref.filter_archs
+
+            for x in archs:
+                if x == "-":
+                    items.clear()
+                elif not x in items:
+                    items.append(x)
         
         if names:
-            if "-" in names:
-                pref.filter_names = None
-            else:
-                pref.filter_names = names
+            if pref.filter_names is None:
+                pref.filter_names = []
+            items = pref.filter_names
+            
+            for x in names:
+                if x == "-":
+                    items.clear()
+                elif not x in items:
+                    items.append(x)
         
         if tags:
-            if "-" in tags:
-                pref.filter_tags = None
-            else:    
-                pref.filter_tags = tags
+            if pref.filter_tags is None:
+                pref.filter_tags = []
+            items = pref.filter_tags
+
+            for x in tags:
+                if x == "-":
+                    items.clear()
+                elif not x in items:
+                    items.append(x)
 
         if params:
-            if "-" in params:
-                pref.filter_params = None
-            else:
-                params = [p.strip().split("=") for p in params]
-                if params and any(len(p) != 2 for p in params):
-                    error("--p only accepts parameters in the format KEY=VALUE")
-                
-                pref.filter_params = params
+            if pref.filter_params is None:
+                pref.filter_params = []
+            items = pref.filter_params
+
+            for x in params:
+                if x == "-":
+                    items.clear()
+                else:
+                    cells = x.strip().split("=")
+                    if len(cells) != 2:
+                        error("--p only accepts parameters in the format KEY=VALUE")
+                    items.append(cells)
         
         pref.save()
         
