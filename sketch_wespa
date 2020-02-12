@@ -2,13 +2,13 @@ make r6 ds=Dog fps=30 extra='-gridSize 15 -cdMaxTrains 30 -cdThreshold 0.8 -cdNu
 
 DATASETS="`(cd $HOME/Sources/teste/data/otg100 && ls -d */ | sed -r 's:/::' | tr '\n' ' ')`"
 DATASETS="`(cd $HOME/Sources/dory/src/data/otg100 && ls -d */ | sed -r 's:/::' | tr '\n' ' ')`"
+DATASETS="`(cd $HOME/Tracker/dory2/fullapp/data/otg100 && ls -d */ | sed -r 's:/::' | tr '\n' ' ')`"
 
-time wup burn --cluster \
-    --redo
-    --only :128 \
-    --w '/home/wup/Sources/teste' \
+/usr/bin/time wup burn --cluster \
+    --redo \
+    --w '/home/ngd/Tracker/dory2/fullapp' \
     --o './burn' \
-    --runs 100 \
+    --runs 1 \
     --v DS_NAME $DATASETS \
 \
     --e WISARD \
