@@ -13,5 +13,8 @@ wup burn --cluster \
 wup parse \
     --i ./output \
     --o ./output/parse.csv \
-    --p "Full product: <!float!>" \
-    --p "Full product: <!float!>" \
+    --p FULL "Full product: @float@" \
+    --p BIGGEST "Biggest: @float@" \
+    --p MINIMUM "Minimum: @float@" \
+    --p SUM "Sum: @float@"
+
