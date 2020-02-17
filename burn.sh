@@ -1,6 +1,7 @@
-wup cluster burn --cluster \
+wup burn --cluster \
+    --redo \
     --w '$HOME' \
-    --o "$HOME/teste_output" \
+    --o "output" \
     --runs 2 \
     --v P1 1 2 3 \
 \
@@ -9,3 +10,8 @@ wup cluster burn --cluster \
     --vg P3 1 10 1.5 \
     --c './test.py $P1 $P2 $P3'
 
+wup parse \
+    --i ./output \
+    --o ./output/parse.csv \
+    --p "Full product: <!float!>" \
+    --p "Full product: <!float!>" \

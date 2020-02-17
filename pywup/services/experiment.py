@@ -1,6 +1,8 @@
 from pywup.services.system import error
 
 import copy
+import sys
+import re
 
 
 class Command:
@@ -14,6 +16,34 @@ class Command:
         return "Command %s; %s" % (self.cmdline, self.env_name)
 
 
+class Pattern:
+    
+    def __init__(self, args):
+        self.name = args.pop_parameter()
+        self.raw = args.pop_parameter()
+        self.p = re.compile(self.raw)
+        self.data = None
+    
+    def clear(self):
+        self.data = None
+    
+    def get_name(self):
+        return self.name
+    
+    def get_value(self):
+        if self.data is None:
+            sys.stdout.write("!(" + self.name + ")")
+        return self.data
+    
+    def value(self):
+        return -1 if self.data is None else float(self.data)
+    
+    def check(self, row):
+        m = self.p.search(row)
+        if m:
+            self.data = m.groups()[0]
+
+
 class Experiment:
 
     def __init__(self, name):
@@ -21,11 +51,16 @@ class Experiment:
         self.work_dir = None
         self.variables = []
         self.commands = []
+        self.patterns = []
         self.name = name
     
 
     def __repr__(self):
         return "Experiment %s; %s; %s" % (self.name, str(self.variables), str(self.commands))
+
+
+    def add_pattern(self, p):
+        self.patterns.append(p)
 
 
     def add_variable(self, v):

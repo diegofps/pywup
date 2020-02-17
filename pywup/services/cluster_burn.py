@@ -48,7 +48,7 @@ def combine_variables(variables, combination=[]):
         name = var.get_name()
         
         for value in var.get_values():
-            combination.append([name, value])
+            combination.append({"n": name, "v": value})
 
             for tmp in combine_variables(variables, combination):
                 yield tmp
@@ -103,7 +103,7 @@ class Task:
     
     
     def __repr__(self):
-        comb = ";".join(str(v) for v in self.combination)
+        comb = ";".join(str(k) + "=" + str(v) for k, v in self.combination.items())
         return "%d %d %d %d %s %s" % (self.experiment_idd, self.perm_idd, 
                     self.run_idd, self.task_idd, comb, self.cmdline)
 
@@ -313,8 +313,8 @@ class Proc:
         variables = copy.copy(self.env_variables)
         variables["WUP_WORK_DIR"] = task.work_dir
 
-        for name, value in task.combination:
-            variables[name] = str(value)
+        for v in task.combination:
+            variables[v["n"]] = str(v["v"])
 
         initrc = [b"export %s=\"%s\"" % (a.encode(), b.encode()) for a, b in variables.items()]
         initrc.insert(0, b"cd \"%s\"" % task.work_dir.encode())
@@ -402,7 +402,7 @@ class ClusterBurn(Context):
         signature = key.digest()
         other_signature = b""
         
-        signature_filepath = os.path.join(self.output_dir, "experiment.sig")
+        signature_filepath = os.path.join(self.output_dir, "signature.bin")
 
         if os.path.exists(signature_filepath):
             with open(signature_filepath, "rb") as fin:

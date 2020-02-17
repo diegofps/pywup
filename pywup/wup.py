@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-from pywup.services.burn import Experiment, ListVariable, GeometricVariable, ArithmeticVariable
 from pywup.services.system import abort, error, WupError, Route, Params, colors, expand_path
 from pywup.services.context import Context
 from pywup.services.io import Preferences
@@ -93,6 +92,7 @@ def about(cmd, args):
 
 def burn(cmd, args):
 
+    from pywup.services.experiment import Experiment, ListVariable, GeometricVariable, ArithmeticVariable
     from pywup.services.cluster_burn import ClusterBurn
 
     current_experiment = None
@@ -193,11 +193,50 @@ def burn(cmd, args):
     ClusterBurn(cluster, redo_tasks, tasks_filter, num_runs, output_dir, default_workdir, default_variables, experiments, no_check).start()
 
 
+def parse(cmd, args):
+    
+    from pywup.services.experiment import Experiment, Pattern
+    from pywup.services.parse import Parse
+
+    output_file = "./burn.csv"
+    input_folder = "./burn"
+
+    current_experiment = None
+    default_patterns = []
+    experiments = []
+
+    while args.has_next():
+        cmd = args.pop_cmd()
+
+        if cmd == "--i":
+            input_folder = args.pop_parameter()
+        
+        elif cmd == "--o":
+            output_file = args.pop_parameter()
+        
+        elif cmd == "--p":
+            if current_experiment is None:
+                default_patterns.append(Pattern(args))
+            else:
+                current_experiment.add_pattern(Pattern(args))
+        
+        elif cmd == "--e":
+            name = args.pop_parameter()
+            current_experiment = Experiment(name)
+            experiments.append(current_experiment)
+        
+        else:
+            error("Invalid command:", cmd)
+
+    Parse(input_folder, output_file, default_patterns, experiments).start()
+
+
 def wup(*params):
     r = Route(sys.argv[1:], "wup")
 
     r.map("collect", collect, "Run an app multiple times, variating its parameters and collecting its output attributes")
     r.map("burn", burn, "Runs distributed experiments")
+    r.map("parse", parse, "Parse a burn output and extract output parameters to a CSV file")
     r.map("heatmap", heatmap, "Plot a heatmap image using the data collected (requires matplotlib)")
     r.map("bars", bars, "Plot bars image using the data collected (requires matplotlib)")
     r.map("backup", backup, "Backup system files into a folder synced to a cloud")

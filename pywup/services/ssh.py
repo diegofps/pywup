@@ -20,9 +20,6 @@ class BasicSSH:
         if user:
             self.credential = user + "@" + self.credential
         
-        if port:
-            self.credential = self.credential + ":" + self.port
-
         self.assert_key_exists()
 
 
