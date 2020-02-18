@@ -21,22 +21,33 @@ class Pattern:
     def __init__(self, args):
         self.name = args.pop_parameter()
         self.raw = args.pop_parameter()
-        self.p = re.compile(self.raw)
         self.data = None
+
+        self.raw = self.raw.replace("@float@", "[-0-9\\.e\\+]+")
+        self.raw = self.raw.replace("@int@", "[-0-9\\+]+")
+        self.raw = self.raw.replace("@slug@", "[-0-9a-zA-Z_]+")
+        self.raw = self.raw.replace("@str@", "\"[^\"]+\"")
+
+        self.p = re.compile(self.raw)
     
+
     def clear(self):
         self.data = None
     
+
     def get_name(self):
         return self.name
     
+
     def get_value(self):
         if self.data is None:
             sys.stdout.write("!(" + self.name + ")")
         return self.data
     
+
     def value(self):
-        return -1 if self.data is None else float(self.data)
+        return self.data
+    
     
     def check(self, row):
         m = self.p.search(row)

@@ -12,9 +12,10 @@ wup burn \
 
 wup parse \
     --i ./output \
-    --o ./output/parse.csv \
-    --p FULL "Full product: @float@" \
-    --p BIGGEST "Biggest: @float@" \
-    --p MINIMUM "Minimum: @float@" \
-    --p SUM "Sum: @float@"
+    --o ./output/teste.csv \
+    --e TESTE \
+    --p FULL "Full product: (@float@)" \
+    --p BIGGEST "Biggest: (@float@)" \
+    --p MINIMUM "Minimum: (@float@)" \
+    --p SUM "Sum: (@float@)"
 
