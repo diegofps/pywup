@@ -9,6 +9,7 @@ from datetime import datetime
 from subprocess import Popen
 
 import hashlib
+import base64
 import select
 import shlex
 import uuid
@@ -383,9 +384,8 @@ class ClusterBurn(Context):
 
     def start(self):
 
-        self.tasks = self._start_tasks()
         self._validate_signature()
-
+        self.tasks = self._start_tasks()
         self.procs = self._start_cluster()
         self._burn()
 
@@ -395,24 +395,33 @@ class ClusterBurn(Context):
         key = hashlib.md5()
 
         key.update(str(self.num_runs).encode())
-        #key.update(str(self.tasks).encode())
         key.update(str(self.experiments).encode())
         key.update(str(self.default_variables).encode())
 
-        signature = key.digest()
-        other_signature = b""
-        
-        signature_filepath = os.path.join(self.output_dir, "signature.bin")
+        signature = base64.b64encode(key.digest()).decode("utf-8")
 
-        if os.path.exists(signature_filepath):
-            with open(signature_filepath, "rb") as fin:
-                other_signature = fin.read()
+        info = {
+            "no_check": self.no_check,
+            "redo": self.redo_tasks,
+            "cluster": self.cluster,
+            "default_workdir": self.default_workdir,
+            "num_runs": self.num_runs,
+            "signature": signature
+        }
 
-        if other_signature and other_signature != signature and not self.no_check:
+        info_filepath = os.path.join(self.output_dir, "info.yml")
+
+        try:
+            with open(info_filepath, "r") as fin:
+                other = yaml.load(fin, Loader=yaml.FullLoader)
+        except:
+            other = None
+
+        if other and "signature" in other and other["signature"] != signature and not self.no_check:
             error("This output directory belongs to another experiment combination, use an empty directory (recommended) or add parameter --no-check to overwrite it")
 
-        with open(signature_filepath, "wb") as fout:
-            fout.write(signature)
+        with open(info_filepath, "w") as fout:
+            yaml.dump(info, fout, default_flow_style=False)
 
 
     def _start_tasks(self):
@@ -429,6 +438,24 @@ class ClusterBurn(Context):
             variables = e.get_variables(self.default_variables)
             work_dir = e.get_work_dir(self.default_workdir)
 
+            experiment_filepath = os.path.join(self.output_dir, "experiments", e.name)
+            info_filepath = os.path.join(experiment_filepath, "info.yml")
+
+            info = {
+                "name": e.name,
+                "work_dir": work_dir,
+                "commands": [c.cmdline for c in e.commands],
+                "variables": [
+                    { 
+                        "name": v.get_name(),
+                        "values": v.get_values() 
+                    } for v in variables 
+                ]
+            }
+
+            with open(info_filepath, "w") as fout:
+                yaml.dump(info, fout, default_flow_style=False)
+
             for combination in combine_variables(variables):
                 perm_idd += 1
 
@@ -441,7 +468,7 @@ class ClusterBurn(Context):
                         if self.tasks_filter and not any(a<= task_idd < b for a, b in self.tasks_filter):
                             continue
 
-                        output_dir = os.path.join(self.output_dir, "experiments", e.name, str(task_idd))
+                        output_dir = os.path.join(experiment_filepath, str(task_idd))
 
                         if not self.redo_tasks and os.path.exists(os.path.join(output_dir, ".done")):
                             continue

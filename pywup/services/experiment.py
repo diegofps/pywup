@@ -56,7 +56,7 @@ class Experiment:
     
 
     def __repr__(self):
-        return "Experiment %s; %s; %s" % (self.name, str(self.variables), str(self.commands))
+        return "Experiment %s; %s; %s" % (self.name, str(self.variables), str(len(self.commands)))
 
 
     def add_pattern(self, p):

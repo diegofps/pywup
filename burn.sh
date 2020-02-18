@@ -1,4 +1,4 @@
-wup burn --cluster \
+wup burn \
     --redo \
     --w '$HOME' \
     --o "output" \
@@ -8,7 +8,7 @@ wup burn --cluster \
     --e TESTE \
     --va P2 1 10 2 \
     --vg P3 1 10 1.5 \
-    --c './test.py $P1 $P2 $P3'
+    --c '/home/diego/Sources/pywup/test.py $P1 $P2 $P3'
 
 wup parse \
     --i ./output \

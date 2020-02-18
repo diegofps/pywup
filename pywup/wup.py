@@ -198,8 +198,8 @@ def parse(cmd, args):
     from pywup.services.experiment import Experiment, Pattern
     from pywup.services.parse import Parse
 
-    output_file = "./burn.csv"
     input_folder = "./burn"
+    output_folder = None
 
     current_experiment = None
     default_patterns = []
@@ -212,7 +212,7 @@ def parse(cmd, args):
             input_folder = args.pop_parameter()
         
         elif cmd == "--o":
-            output_file = args.pop_parameter()
+            output_folder = args.pop_parameter()
         
         elif cmd == "--p":
             if current_experiment is None:
@@ -228,7 +228,7 @@ def parse(cmd, args):
         else:
             error("Invalid command:", cmd)
 
-    Parse(input_folder, output_file, default_patterns, experiments).start()
+    Parse(input_folder, output_folder, default_patterns, experiments).start()
 
 
 def wup(*params):
