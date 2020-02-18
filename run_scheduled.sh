@@ -40,6 +40,59 @@ https://github.com/ninja-build/ninja/wiki/Pre-built-Ninja-packages
 https://stackoverflow.com/questions/56472727/difference-between-apache-parquet-and-arrow
 https://github.com/apache/arrow/issues/1125
 https://issues.apache.org/jira/browse/ARROW-5382?src=confmacro
+https://gist.github.com/heavyinfo/04e1326bb9bed9cecb19c2d603c8d521
+
+export PYARROW_WITH_FLIGHT=1
+export PYARROW_WITH_GANDIVA=1
+export PYARROW_WITH_ORC=1
+export PYARROW_WITH_PARQUET=1
+export PYARROW_WITH_PLASMA=1
+
+--------------------------------------------------------------------------------
+
+cmake .. -DARROW_PYTHON=ON -DARROW_BUILD_EXAMPLES=ON -DARROW_BUILD_BENCHMARKS=ON \
+    -DARROW_BUILD_BENCHMARKS_REFERENCE=ON -DARROW_BUILD_UTILITIES=ON -DARROW_PARQUET=ON \
+    -DARROW_WITH_ZLIB=ON -DPARQUET_BUILD_EXECUTABLES=ON -DPARQUET_BUILD_EXAMPLES=ON \
+    -DARROW_FLIGHT=ON -DARROW_WITH_BZ2=ON
+
+cmake .. \
+      -DCMAKE_INSTALL_PREFIX=$ARROW_HOME \
+      -DCMAKE_INSTALL_LIBDIR=lib  \
+      -DARROW_FLIGHT=ON \
+      -DARROW_GANDIVA=ON  \
+      -DARROW_ORC=ON  \
+      -DARROW_CUDA=ON \
+      -DARROW_WITH_BZ2=ON \
+      -DARROW_WITH_ZLIB=ON  \
+      -DARROW_WITH_ZSTD=ON  \
+      -DARROW_WITH_LZ4=ON \
+      -DARROW_WITH_SNAPPY=ON  \
+      -DARROW_WITH_BROTLI=ON  \
+      -DARROW_PARQUET=ON  \
+      -DARROW_PYTHON=ON \
+      -DARROW_PLASMA=ON \
+      -DARROW_CUDA=ON \
+      -DARROW_BUILD_TESTS=ON  \
+      -DARROW_BUILD_EXAMPLES=ON \
+      -DARROW_BUILD_BENCHMARKS=ON \
+      -DARROW_BUILD_BENCHMARKS_REFERENCE=ON \
+      -DARROW_BUILD_UTILITIES=ON \
+      -DPARQUET_BUILD_EXECUTABLES=ON \
+      -DPARQUET_BUILD_EXAMPLES=ON \
+      -DPYTHON_EXECUTABLE=/usr/bin/python3
+
+Did not find release/_cuda.cpython-36m-x86_64-linux-gnu.so
+Cython module _cuda failure permitted
+Did not find release/_flight.cpython-36m-x86_64-linux-gnu.so
+Cython module _flight failure permitted
+Did not find release/_parquet.cpython-36m-x86_64-linux-gnu.so
+Cython module _parquet failure permitted
+Did not find release/_orc.cpython-36m-x86_64-linux-gnu.so
+Cython module _orc failure permitted
+Did not find release/_plasma.cpython-36m-x86_64-linux-gnu.so
+Cython module _plasma failure permitted
+Did not find release/gandiva.cpython-36m-x86_64-linux-gnu.so
+Cython module gandiva failure permitted
 
 --------------------------------------------------------------------------------
 

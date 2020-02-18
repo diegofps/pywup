@@ -72,21 +72,17 @@ DATASETS="`(cd /home/wup/Sources/teste/data/otg100 && ls -d */ | sed -r 's:/::' 
 
 wup burn --cluster \
     --redo \
-    --summary \
     --w '/home/wup/Sources/teste' \
     --o "output_teste" \
     --runs 10 \
     --v DS $DATASETS \
 \
-    --e ZTracker \
+    --e ZTracker1 \
     --v GRIDSIZE 7 10 13 15 \
     --va STEPSIZE1 0.04 0.21 0.04 \
     --va STEPSIZE2 0.04 0.21 0.04 \
     --va SCANSIZE1 0.5 1.31 0.2 \
     --va SCANSIZE2 0.3 0.91 0.2 \
-    --v LEARNWINDOW 1 2 3 \
-    --va RAMBITS 4 7 1 \
-    --va REPLICATE 1 3 1 \
     --c './main6 -model z \
         -ds $DS \
         -gridSize $GRIDSIZE \
@@ -95,6 +91,29 @@ wup burn --cluster \
         -cdNumDiscs 10 \
         -ztStepSize $STEPSIZE1 $STEPSIZE2 \
         -ztScanSize $SCANSIZE1 $SCANSIZE2 \
+        -ztTimeWindow 50 \
+        -ztL1 0.8 \
+        -ztL2 0.6 \
+        -ztArea 0.002 0.2 \
+        -ztNumLayers 30 \
+        -ztScalePen 0.0 \
+        -ztLearnWindow 1 \
+        -ztRamBits 6 \
+        -ztReplicate 2 \
+        -ztMinConfidence 0.0' \
+\
+    --e ZTracker2 \
+    --v LEARNWINDOW 1 2 3 \
+    --va RAMBITS 4 6 1 \
+    --va REPLICATE 1 3 1 \
+    --c './main6 -model z \
+        -ds $DS \
+        -gridSize 15 \
+        -cdMaxTrains 30 \
+        -cdThreshold 0.8 \
+        -cdNumDiscs 10 \
+        -ztStepSize 0.08 0.08 \
+        -ztScanSize 0.8 0.5 \
         -ztTimeWindow 50 \
         -ztL1 0.8 \
         -ztL2 0.6 \
@@ -134,3 +153,26 @@ wup burn --cluster \
         -ztRamBits 6 \
         -ztReplicate 2 \
         -ztMinConfidence 0'
+
+================================================================================
+
+./main6 -model z \
+    -ds Dog \
+    -gridSize 15 \
+    -cdMaxTrains 30 \
+    -cdThreshold 0.8 \
+    -cdNumDiscs 10 \
+    -ztStepSize 0.08 0.08 \
+    -ztScanSize 0.8 0.5 \
+    -ztMaxRams 40 \
+    -ztTimeWindow 50 \
+    -ztL1 0.8 \
+    -ztL2 0.6 \
+    -ztArea 0.002 0.2 \
+    -ztNumLayers 30 \
+    -ztScalePen 0.0 \
+    -ztLearnWindow 1 \
+    -ztRamBits 6 \
+    -ztReplicate 2 \
+    -ztMinConfidence 0
+
