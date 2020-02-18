@@ -428,7 +428,7 @@ class ClusterBurn(Context):
 
         experiment_idd = -1
         perm_idd = -1
-        run_idd = -1
+        #run_idd = -1
         task_idd = -1
         tasks = []
 
@@ -459,8 +459,8 @@ class ClusterBurn(Context):
             for combination in combine_variables(variables):
                 perm_idd += 1
 
-                for _ in range(self.num_runs):
-                    run_idd += 1
+                for run_idd in range(self.num_runs):
+                    #run_idd += 1
 
                     for cmd_idd, cmd in enumerate(e.commands):
                         task_idd += 1

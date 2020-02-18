@@ -26,7 +26,7 @@ class TaskParser:
             self.add_var(p.name)
 
         # Task
-        for v in ["TASK_ID", "TASK_PERMID", "TASK_STARTED_AT", 
+        for v in ["TASK_ID", "TASK_PERM_ID", "TASK_RUN_ID", "TASK_STARTED_AT", 
                   "TASK_ENDED_AT", "TASK_DURATION", "TASK_TRIES", 
                   "TASK_ARCH_USED", "TASK_MACHINE_USED"]:
             self.add_var(v)
@@ -77,7 +77,8 @@ class TaskParser:
             self.values[self.header_map[name]] = value
 
         self.values[self.header_map["TASK_ID"]] = data["task_idd"]
-        self.values[self.header_map["TASK_PERMID"]] = data["perm_idd"]
+        self.values[self.header_map["TASK_PERM_ID"]] = data["perm_idd"]
+        self.values[self.header_map["TASK_RUN_ID"]] = data["run_idd"]
         self.values[self.header_map["TASK_STARTED_AT"]] = data["started_at"]
         self.values[self.header_map["TASK_ENDED_AT"]] = data["ended_at"]
         self.values[self.header_map["TASK_DURATION"]] = data["duration"]

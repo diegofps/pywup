@@ -232,7 +232,7 @@ def wup(*params):
 
     r.map("collect", collect, "Run an app multiple times, variating its parameters and collecting its output attributes")
     r.map("burn", burn, "Runs distributed experiments")
-    r.map("parse", parse, "Parse a burn output and extract output parameters to a CSV file")
+    r.map("parse", parse, "Parse a burn output directory and generate a CSV file from it")
     r.map("heatmap", heatmap, "Plot a heatmap image using the data collected (requires matplotlib)")
     r.map("bars", bars, "Plot bars image using the data collected (requires matplotlib)")
     r.map("backup", backup, "Backup system files into a folder synced to a cloud")
