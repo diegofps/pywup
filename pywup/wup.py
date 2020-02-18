@@ -104,6 +104,7 @@ def burn(cmd, args):
     experiments = []
     no_check = False
     cluster = False
+    summary = False
     num_runs = 1
 
     def require_experiment():
@@ -160,6 +161,9 @@ def burn(cmd, args):
             cmd = args.pop_parameter()
             current_experiment.add_command(cmd)
         
+        elif cmd == "--summary":
+            summary = True
+        
         elif cmd == "--vc":
             require_experiment()
             env = args.pop_parameter()
@@ -190,7 +194,12 @@ def burn(cmd, args):
         else:
             error("Unknown parameter:", cmd)
     
-    ClusterBurn(cluster, redo_tasks, tasks_filter, num_runs, output_dir, default_workdir, default_variables, experiments, no_check).start()
+    cb = ClusterBurn(cluster, redo_tasks, tasks_filter, num_runs, output_dir, default_workdir, default_variables, experiments, no_check)
+    
+    if summary:
+        cb.summary()
+    else:
+        cb.start()
 
 
 def parse(cmd, args):

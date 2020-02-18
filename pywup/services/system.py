@@ -382,11 +382,11 @@ class Args:
             cb(self.last)
         
         else:
-            raise RuntimeError("Wrong argument, expecting a parameter")
+            error("Wrong argument, expecting a parameter")
     
     def pop_cmd(self):
         if not self.has_cmd():
-            raise RuntimeError("Wrong argument, expecting a command: ", self.sneak())
+            error("Wrong argument. Expecting a command, got", self.sneak(), "after", self.last)
         return self.pop()
 
 

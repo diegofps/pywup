@@ -1,5 +1,6 @@
 make r6 ds=Dog fps=30 extra='-gridSize 15 -cdMaxTrains 30 -cdThreshold 0.8 -cdNumDiscs 10 -model z -ztRamBits 5 -ztReplicate 2 -ztMinConfidence 0'
 
+DATASETS="`(cd /home/wup/Sources/teste/data/otg100 && ls -d */ | sed -r 's:/::' | tr '\n' ' ')`"
 DATASETS="`(cd $HOME/Sources/teste/data/otg100 && ls -d */ | sed -r 's:/::' | tr '\n' ' ')`"
 DATASETS="`(cd $HOME/Sources/dory/src/data/otg100 && ls -d */ | sed -r 's:/::' | tr '\n' ' ')`"
 DATASETS="`(cd $HOME/Tracker/dory2/fullapp/data/otg100 && ls -d */ | sed -r 's:/::' | tr '\n' ' ')`"

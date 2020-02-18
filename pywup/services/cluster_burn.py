@@ -379,11 +379,31 @@ class ClusterBurn(Context):
         self.num_runs = num_runs
         self.cluster = cluster
 
-        os.makedirs(self.output_dir, exist_ok=True)
+
+    def summary(self):
+        total = 0
+
+        for e in self.experiments:
+            variables = e.get_variables(self.default_variables)
+            current = 1
+
+            for v in variables:
+                values = v.get_values()
+                ll = len(values)
+                print("\t%s (%d) : %s" % (v.get_name(), ll, str(values)))
+                current *= ll
+            
+            current *= self.num_runs
+            print("Combinations for experiment %s: %d" % (e.name, current))
+            total += current
+        
+        print("Combinations in total: %d" % total)
 
 
     def start(self):
+        os.makedirs(self.output_dir, exist_ok=True)
 
+        self.summary()
         self._validate_signature()
         self.tasks = self._start_tasks()
         self.procs = self._start_cluster()
@@ -425,6 +445,7 @@ class ClusterBurn(Context):
 
 
     def _start_tasks(self):
+        print("Creating tasks...")
 
         experiment_idd = -1
         perm_idd = -1
@@ -440,6 +461,7 @@ class ClusterBurn(Context):
 
             experiment_filepath = os.path.join(self.output_dir, "experiments", e.name)
             info_filepath = os.path.join(experiment_filepath, "info.yml")
+            os.makedirs(experiment_filepath, exist_ok=True)
 
             info = {
                 "name": e.name,
@@ -476,10 +498,14 @@ class ClusterBurn(Context):
                         task = Task(e.name, output_dir, work_dir, experiment_idd, perm_idd, run_idd, task_idd, combination, cmd.cmdline, cmd_idd)
                         tasks.append(task)
 
+        if not tasks:
+            error("No tasks to do")
+        
         return tasks
 
 
     def _start_cluster(self):
+        print("Starting cluster...")
 
         if self.cluster:
             cluster = self.clusterfile()

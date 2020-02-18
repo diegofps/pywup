@@ -76,7 +76,7 @@ class Experiment:
 
     def add_variable(self, v):
         if any(v.get_name() == o.get_name() for o in self.variables):
-            error("This variable is already defined in this environment")
+            error("Variable %s is already defined in this environment" % v.get_name())
         else:
             self.variables.append(v)
 
