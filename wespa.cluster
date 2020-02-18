@@ -1,0 +1,49 @@
+archs:
+  amd64:
+    wespa1:
+      build: true
+      deploy: true
+      hostname: 192.168.1.148
+      port: 22
+      procs: 16
+      user: wup
+    wespa3:
+      build: true
+      deploy: true
+      hostname: 192.168.1.105
+      port: 22
+      procs: 16
+      user: wup
+    wespa2:
+      build: true
+      deploy: true
+      hostname: 192.168.1.121
+      port: 22
+      procs: 16
+      user: wup
+    wespa4:
+      build: true
+      deploy: true
+      hostname: 192.168.1.107
+      port: 22
+      procs: 16
+      user: wup
+    gaia:
+      build: true
+      deploy: true
+      hostname: 192.168.1.149
+      port: 22
+      procs: 16
+      user: wup
+    tower:
+      build: true
+      deploy: true
+      hostname: 192.168.1.134
+      port: 22
+      procs: 64
+      user: wup
+docker_based: false
+env_filepath: 
+env_name: 
+filepath: /home/diego/Sources/pywup/two.cluster
+name: two
