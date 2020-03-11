@@ -89,14 +89,17 @@ class Preferences:
         os.makedirs(folderpath, exist_ok=True)
 
         with open(os.path.join(folderpath, "state"), "w") as fout:
-            if not cluster_name:
-                fout.write(colors.purple(state))
+            fout.write(state)
 
-            elif cluster_env:
-                fout.write(colors.purple(state))
+            # Disabling dynamic colors as they break newline in bash
+            #if not cluster_name:
+            #    fout.write(colors.purple(state))
 
-            else:
-                fout.write(colors.cyan(state))
+            #elif cluster_env:
+            #    fout.write(colors.purple(state))
+
+            #else:
+            #    fout.write(colors.cyan(state))
 
 
 class Getter:
